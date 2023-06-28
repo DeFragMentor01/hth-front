@@ -32,7 +32,7 @@ const RegisterConfirmation = () => {
     setError("");
 
     try {
-      const response = await axios.post(process.env.baseURL +'/register", requestData);
+      const response = await axios.post(process.env.baseURL +'/register', requestData);
 
       if (response.data.message.includes("User registered successfully!")) {
         setCurrentForm((prevForm) => prevForm + 1); // Increment the currentStep by 1
