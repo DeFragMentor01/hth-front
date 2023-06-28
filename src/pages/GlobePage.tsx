@@ -61,7 +61,7 @@ const GlobePage: FunctionComponent<GlobePageProps> = () => {
 
   useEffect(() => {
     axios
-      .get<CommunityData[]>("http://localhost:3000/villages-info")
+      .get<CommunityData[]>(process.env.baseURL +'/villages-info")
       .then((response) => {
         const { data } = response;
 

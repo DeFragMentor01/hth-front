@@ -210,7 +210,7 @@ const UsersTable: React.FC = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/users")
+      .get(process.env.baseURL +'/users")
       .then((response) => {
         const { data } = response;
         const converted = data.map((person: Person) => ({
