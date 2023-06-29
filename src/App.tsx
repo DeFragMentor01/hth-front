@@ -10,7 +10,7 @@ import GlobePage from './pages/GlobePage';
 import PollsPage from './pages/PollsPage';
 
 interface Props {
-  // ...
+  // ...s
 }
 
 const App: React.FunctionComponent<Props> = () => {
