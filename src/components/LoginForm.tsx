@@ -47,7 +47,7 @@ const LoginForm: React.FC<LoginFormProps> = () => {
   
     if (errors.length === 0) {
       try {
-        const response = await axios.post(process.env.baseURL +'/login', {
+        const response = await axios.post(process.env.BASE_URL +'/login', {
           email: email,
           password: password
         });
