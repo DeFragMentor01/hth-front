@@ -40,6 +40,49 @@ const UsersTable: React.FC = () => {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+    axios
+      .get(process.env.REACT_APP_BASE_URL +'/users')
+      .then((response) => {
+        const { data } = response;
+        const converted = data.map((person: Person) => ({
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
+
+        setData(data);
+        setTotalUsers(data.length);
+        setConvertedData(converted);
+        setFilteredData(converted);
+
+        const options: { [key: string]: string[] } = {};
+        Object.keys(data[0]).forEach((key) => {
+          if (
+            key === "age" ||
+            key === "village" ||
+            key === "city" ||
+            key === "community" ||
+            key === "state" ||
+            key === "country"
+          ) {
+            options[key] = uniq(data.map((item: Person) => item[key]));
+          }
+        });
+        setFilterOptions(options);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
+
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
+
   const table = useReactTable({
     data: filteredData,
     columns: useMemo(() => {
@@ -207,49 +250,6 @@ const UsersTable: React.FC = () => {
       setEnd((prevEnd) => prevEnd + 30);
     }
   };
-
-  useEffect(() => {
-    axios
-      .get(process.env.REACT_APP_BASE_URL +'/users')
-      .then((response) => {
-        const { data } = response;
-        const converted = data.map((person: Person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
-
-        setData(data);
-        setTotalUsers(data.length);
-        setConvertedData(converted);
-        setFilteredData(converted);
-
-        const options: { [key: string]: string[] } = {};
-        Object.keys(data[0]).forEach((key) => {
-          if (
-            key === "age" ||
-            key === "village" ||
-            key === "city" ||
-            key === "community" ||
-            key === "state" ||
-            key === "country"
-          ) {
-            options[key] = uniq(data.map((item: Person) => item[key]));
-          }
-        });
-        setFilterOptions(options);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
-
-  useEffect(() => {
-    setFilteredUsers(filteredData.length);
-  }, [filteredData]);
 
   return (
     <>
