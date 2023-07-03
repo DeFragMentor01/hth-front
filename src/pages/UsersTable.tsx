@@ -377,7 +377,7 @@ const UsersTable: React.FC = () => {
                     ))}
                   </thead>
                   <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                   {table.getRowModel().rows.slice(0, end).map((row, index) => (
+                  {table.getRowModel().rows.slice(0, end).map((row, index) => (
   <tr
     key={row.id}
     className={`${
@@ -389,7 +389,7 @@ const UsersTable: React.FC = () => {
         key={cell.id}
         className={`py-2 px-5 ${cell.column.id === "age" ? "text-center" : ""}`}
       >
-        {flexRender(cell.column.cell.render(cell))}
+        {flexRender(cell.render("Cell"))}
       </td>
     ))}
   </tr>
