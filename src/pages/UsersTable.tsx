@@ -377,23 +377,23 @@ const UsersTable: React.FC = () => {
                     ))}
                   </thead>
                   <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                    {table.getRowModel().rows.slice(0, end).map((row, index) => (
-                      <tr
-                        key={row.id}
-                        className={`${
-                          index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-100") : ""
-                        }`}
-                      >
-                        {row.cells.map((cell) => (
-                          <td
-                            key={cell.column.id}
-                            className={`py-2 px-5 ${cell.column.id === "age" ? "text-center" : ""}`}
-                          >
-                            {flexRender(cell.getCellProps(cell.column.getProps()).cell)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                   {table.getRowModel().rows.slice(0, end).map((row, index) => (
+  <tr
+    key={row.id}
+    className={`${
+      index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-100") : ""
+    }`}
+  >
+    {row.getVisibleCells().map((cell) => (
+      <td
+        key={cell.id}
+        className={`py-2 px-5 ${cell.column.id === "age" ? "text-center" : ""}`}
+      >
+        {flexRender(cell.column.cell.render(cell))}
+      </td>
+    ))}
+  </tr>
+))}
                   </tbody>
                 </table>
               </div>
