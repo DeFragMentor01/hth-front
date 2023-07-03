@@ -215,18 +215,18 @@ const UsersTable: React.FC = () => {
       .get(`${process.env.REACT_APP_BASE_URL}/users`)
       .then((response) => {
         const { data } = response;
-        const converted = data.map((person: Person) => ({
+        const converted = data.users.map((person: Person) => ({
           ...person,
           age: calculateAge(new Date(person.dateofbirth)),
         }));
 
-        setData(data);
-        setTotalUsers(data.length);
+        setData(data.users);
+        setTotalUsers(data.users.length);
         setConvertedData(converted);
         setFilteredData(converted);
 
         const options: { [key: string]: string[] } = {};
-        Object.keys(data[0]).forEach((key) => {
+        Object.keys(data.users[0]).forEach((key) => {
           if (
             key === "age" ||
             key === "village" ||
@@ -235,7 +235,7 @@ const UsersTable: React.FC = () => {
             key === "state" ||
             key === "country"
           ) {
-            options[key] = uniq(data.map((item: Person) => item[key]));
+            options[key] = uniq(data.users.map((item: Person) => item[key]));
           }
         });
         setFilterOptions(options);
