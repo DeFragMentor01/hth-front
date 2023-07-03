@@ -29,6 +29,7 @@ const PAGE_SIZE = 100; // This can be changed based on your needs
 
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
+  const [page, setPage] = useState(0);
   const [convertedData, setConvertedData] = useState<Person[]>([]);
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -103,7 +104,7 @@ const UsersTable: React.FC = () => {
   });
 
   const capitalizeFirstLetter = (string: string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
   };
 
   const calculateAge = (birthDate: Date): number => {
@@ -201,29 +202,28 @@ const UsersTable: React.FC = () => {
     setFilteredData(convertedData); // Reset the filtered data to all users
   };
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const bottom =
-      e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
-      e.currentTarget.clientHeight;
-    if (bottom) {
-      setEnd((prevEnd) => prevEnd + PAGE_SIZE);
-    }
-  };
+ const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight;
+  if (bottom) {
+    setPage((prevPage) => prevPage + 1);
+  }
+};
+
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users`);
-        const { data } = response;
-        const converted = data.users.map((person: Person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
+    axios
+       .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
+    .then((response) => {
+      const { data } = response;
+      const converted = data.users.map((person: Person) => ({
+        ...person,
+        age: calculateAge(new Date(person.dateofbirth)),
+      }));
 
-        setData(data.users);
-        setTotalUsers(data.total);
-        setConvertedData(converted);
-        setFilteredData(converted);
+      setData((prevData) => [...prevData, ...data.users]);
+      setTotalUsers(data.users.length);
+      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
 
         const options: { [key: string]: string[] } = {};
         Object.keys(data.users[0]).forEach((key) => {
@@ -239,13 +239,11 @@ const UsersTable: React.FC = () => {
           }
         });
         setFilterOptions(options);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, [page]);
 
   useEffect(() => {
     applyFilters();
@@ -377,41 +375,27 @@ const UsersTable: React.FC = () => {
                     ))}
                   </thead>
                   <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                  {table.getRowModel().rows.slice(0, end).map((row, index) => (
-  <tr
-    key={row.id}
-    className={`${
-      index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-100") : ""
-    }`}
-  >
-    {row.getVisibleCells().map((cell) => (
-      <td
-        key={cell.id}
-        className={`py-2 px-5 ${cell.column.id === "age" ? "text-center" : ""}`}
-      >
-        {flexRender(cell.render("Cell"))}
-      </td>
-    ))}
-  </tr>
-))}
+                    {table.getRowModel().rows.slice(0, end).map((row, index) => (
+                      <tr
+                        key={row.id}
+                        className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td
+                            key={cell.id}
+                            className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
+                          >
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm">
-                  Showing {end - PAGE_SIZE + 1} - {end > totalUsers ? totalUsers : end} of {totalUsers} users
-                </span>
-                {end < totalUsers && (
-                  <button
-                    onClick={() => setEnd((prevEnd) => prevEnd + PAGE_SIZE)}
-                    className={`px-3 py-1 rounded-lg ${
-                      darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"
-                    } font-semibold focus:outline-none`}
-                  >
-                    Load More
-                  </button>
-                )}
-              </div>
+              <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
+                Displaying {filteredUsers} of {totalUsers} users.
+              </p>
             </div>
           </div>
         </div>
