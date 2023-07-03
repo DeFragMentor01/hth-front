@@ -37,43 +37,52 @@ const UsersTable: React.FC = () => {
   const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-    axios
-      .get(process.env.REACT_APP_BASE_URL +'/users')
-      .then((response) => {
-        const { data } = response;
-        const converted = data.map((person: Person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/users?_page=${page}&_limit=50`
+      );
+      const { data } = response;
+      const converted = data.map((person: Person) => ({
+        ...person,
+        age: calculateAge(new Date(person.dateofbirth)),
+      }));
 
-        setData(data);
-        setTotalUsers(data.length);
-        setConvertedData(converted);
-        setFilteredData(converted);
+      setData((prevData) => [...prevData, ...data]);
+      setTotalUsers((prevTotalUsers) => prevTotalUsers + data.length);
+      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
 
-        const options: { [key: string]: string[] } = {};
-        Object.keys(data[0]).forEach((key) => {
-          if (
-            key === "age" ||
-            key === "village" ||
-            key === "city" ||
-            key === "community" ||
-            key === "state" ||
-            key === "country"
-          ) {
-            options[key] = uniq(data.map((item: Person) => item[key]));
-          }
-        });
-        setFilterOptions(options);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+      const options: { [key: string]: string[] } = {};
+      Object.keys(data[0]).forEach((key) => {
+        if (
+          key === "age" ||
+          key === "village" ||
+          key === "city" ||
+          key === "community" ||
+          key === "state" ||
+          key === "country"
+        ) {
+          options[key] = uniq(data.map((item: Person) => item[key]));
+        }
       });
-  }, []);
+      setFilterOptions(options);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [page]);
 
   useEffect(() => {
     applyFilters();
@@ -84,172 +93,52 @@ const UsersTable: React.FC = () => {
   }, [filteredData]);
 
   const table = useReactTable({
-    data: filteredData,
+    data: filteredData.slice(0, end),
     columns: useMemo(() => {
-      const columnHelper = createColumnHelper<Person>();
-
-      return [
-        columnHelper.accessor("firstname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>First Name</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("lastname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Last Name</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("username", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Username</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("age", {
-          header: () => <span>Age</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("gender", {
-          header: () => "Gender",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("village", {
-          header: () => "Village",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("community", {
-          header: () => "District",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("city", {
-          header: () => "City",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("state", {
-          header: () => "Province",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("country", {
-          header: () => "Country",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-      ];
-    }, []),
-    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
+      const columns = createColumnHelper();
+      return Object.keys(data[0]).map((key) => {
+        const column = columns.create(key, {
+          accessor: key as keyof Person,
+        });
+        column.sortable = true;
+        if (key === "age") column.flexWidth = 1;
+        return column;
+      });
+    }, [data]),
   });
 
-  const capitalizeFirstLetter = (string: string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
-  };  
-
-  const calculateAge = (birthDate: Date): number => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-    return age;
+  const onFilterChange = (key: string, value: string) => {
+    setFilterValues((prev) => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = useCallback(() => {
-    if (convertedData.length > 0) {
-      const newFilteredData = convertedData.filter((data) => {
-        if (
-          filterValues.age &&
-          filterValues.age.length > 0 &&
-          data.age !== parseInt(filterValues.age[0])
-        ) {
-          return false;
-        }
-        if (
-          filterValues.village &&
-          filterValues.village.length > 0 &&
-          !filterValues.village.includes(data.village.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.city &&
-          filterValues.city.length > 0 &&
-          !filterValues.city.includes(data.city.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.community &&
-          filterValues.community.length > 0 &&
-          !filterValues.community.includes(data.community.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.state &&
-          filterValues.state.length > 0 &&
-          !filterValues.state.includes(data.state.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.country &&
-          filterValues.country.length > 0 &&
-          !filterValues.country.includes(data.country.toString())
-        ) {
-          return false;
-        }
-        return true;
-      });
-      setFilteredData(newFilteredData);
-    }
-  }, [convertedData, filterValues]);
-
-  const handleFilterChange = useCallback(
-    (column: string, value: string, { checked }: { checked: boolean }) => {
-      setFilterValues((prevFilterValues) => {
-        const newFilterValues = { ...prevFilterValues };
-        newFilterValues[column] = checked
-          ? [...(newFilterValues[column] || []), value]
-          : (newFilterValues[column] || []).filter(
-              (item: string) => item !== value
-            );
-        if (newFilterValues[column].length === 0) {
-          delete newFilterValues[column];
-        }
-        return newFilterValues;
-      });
-    },
-    []
-  );
-
-  const handleSidebarToggle = () => {
-    setIsSidebarOpen((prevIsSidebarOpen) => !prevIsSidebarOpen);
+  const onColumnSelect = (key: string, selected: boolean) => {
+    setSelectedColumns((prev) => ({ ...prev, [key]: selected }));
   };
 
-  const handleSidebarClose = () => {
-    setIsSidebarOpen(false);
-  };
-
-  const handleFilterReset = () => {
-    setFilterValues({});
-    setFilteredData(convertedData); // Reset the filtered data to all users
-  };
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const bottom =
-      e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
-      e.currentTarget.clientHeight;
-    if (bottom) {
-      setEnd((prevEnd) => prevEnd + 30);
+  const loadMoreData = () => {
+    if (totalUsers > end) {
+      setEnd((prevEnd) => prevEnd + 50);
     }
   };
+
+  useEffect(() => {
+    const element = tableContainerRef.current;
+    if (!element) {
+      return;
+    }
+
+    const handleScroll = (e: any) => {
+      const bottom =
+        e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+      if (bottom) {
+        loadMoreData();
+      }
+    };
+
+    element.addEventListener("scroll", handleScroll);
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, [tableContainerRef, loadMoreData]);
+
 
   return (
     <>
