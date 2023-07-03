@@ -103,7 +103,7 @@ const UsersTable: React.FC = () => {
   });
 
   const capitalizeFirstLetter = (string: string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
   };
 
   const calculateAge = (birthDate: Date): number => {
@@ -211,9 +211,9 @@ const UsersTable: React.FC = () => {
   };
 
   useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_BASE_URL}/users`)
-      .then((response) => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users`);
         const { data } = response;
         const converted = data.users.map((person: Person) => ({
           ...person,
@@ -221,7 +221,7 @@ const UsersTable: React.FC = () => {
         }));
 
         setData(data.users);
-        setTotalUsers(data.users.length);
+        setTotalUsers(data.total);
         setConvertedData(converted);
         setFilteredData(converted);
 
@@ -239,10 +239,12 @@ const UsersTable: React.FC = () => {
           }
         });
         setFilterOptions(options);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -378,14 +380,16 @@ const UsersTable: React.FC = () => {
                     {table.getRowModel().rows.slice(0, end).map((row, index) => (
                       <tr
                         key={row.id}
-                        className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
+                        className={`${
+                          index % 2 === 0 ? (darkMode ? "bg-gray-700" : "bg-gray-100") : ""
+                        }`}
                       >
-                        {row.getVisibleCells().map((cell) => (
+                        {row.cells.map((cell) => (
                           <td
-                            key={cell.id}
-                            className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
+                            key={cell.column.id}
+                            className={`py-2 px-5 ${cell.column.id === "age" ? "text-center" : ""}`}
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(cell.getCellProps(cell.column.getProps()).cell)}
                           </td>
                         ))}
                       </tr>
@@ -393,9 +397,21 @@ const UsersTable: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
-                Displaying {filteredUsers} of {totalUsers} users.
-              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-sm">
+                  Showing {end - PAGE_SIZE + 1} - {end > totalUsers ? totalUsers : end} of {totalUsers} users
+                </span>
+                {end < totalUsers && (
+                  <button
+                    onClick={() => setEnd((prevEnd) => prevEnd + PAGE_SIZE)}
+                    className={`px-3 py-1 rounded-lg ${
+                      darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"
+                    } font-semibold focus:outline-none`}
+                  >
+                    Load More
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
