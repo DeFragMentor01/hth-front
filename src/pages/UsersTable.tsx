@@ -167,22 +167,6 @@ const UsersTable: React.FC = () => {
       console.error("Error fetching data:", error);
     });
 };
-
-useEffect(() => {
-  axios
-    .get(`${process.env.REACT_APP_BASE_URL}/users/count`)
-    .then((response) => {
-      const total = response.data;
-      setTotalUsers(total);
-
-      // Initially load first page of data
-      loadData(1, PAGE_SIZE);
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
-    });
-}, []);
-
   return (
     <>
       <NavBar />
