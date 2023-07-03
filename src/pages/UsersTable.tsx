@@ -33,7 +33,7 @@ const UsersTable: React.FC = () => {
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState(0);
-  const [start, setStart] = useState(0);
+  const [end, setEnd] = useState(PAGE_SIZE);
   const [selectedColumns, setSelectedColumns] = useState<{ [key: string]: boolean }>({});
   const [filterValues, setFilterValues] = useState<{ [key: string]: string[] }>({});
   const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
@@ -119,6 +119,49 @@ const UsersTable: React.FC = () => {
     return age;
   };
 
+  useEffect(() => {
+    axios
+      .get(process.env.REACT_APP_BASE_URL +'/users')
+      .then((response) => {
+        const { data } = response;
+        const converted = data.map((person: Person) => ({
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
+
+        setData(converted);
+        setTotalUsers(data.length);
+        setConvertedData(converted);
+        setFilteredData(converted);
+
+        const options: { [key: string]: string[] } = {};
+        Object.keys(data[0]).forEach((key) => {
+          if (
+            key === "age" ||
+            key === "village" ||
+            key === "city" ||
+            key === "community" ||
+            key === "state" ||
+            key === "country"
+          ) {
+            options[key] = uniq(data.map((item: Person) => item[key]));
+          }
+        });
+        setFilterOptions(options);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
+
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
+
   const applyFilters = useCallback(() => {
     if (convertedData.length > 0) {
       const newFilteredData = convertedData.filter((data) => {
@@ -201,24 +244,14 @@ const UsersTable: React.FC = () => {
     setFilteredData(convertedData); // Reset the filtered data to all users
   };
 
-  const loadMoreData = () => {
-    if (data.length < totalUsers) {
-      loadData(start, PAGE_SIZE);
-    }
-  };
-
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const bottom =
       e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
       e.currentTarget.clientHeight;
     if (bottom) {
-      loadMoreData();
+      setEnd((prevEnd) => prevEnd + PAGE_SIZE);
     }
   };
-
-  useEffect(() => {
-    loadData(start, PAGE_SIZE);
-  }, [start]);
 
   const loadData = (start: number, limit: number) => {
     axios
@@ -249,72 +282,44 @@ const UsersTable: React.FC = () => {
       });
   };
 
-  useEffect(() => {
-    axios
-      .get(process.env.REACT_APP_BASE_URL + '/users')
-      .then((response) => {
-        const { data } = response;
-        const converted = data.map((person: Person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
-
-        setData(converted);
-        setTotalUsers(data.length);
-        setConvertedData(converted);
-        setFilteredData(converted);
-
-        const options: { [key: string]: string[] } = {};
-        Object.keys(data[0]).forEach((key) => {
-          if (
-            key === "age" ||
-            key === "village" ||
-            key === "city" ||
-            key === "community" ||
-            key === "state" ||
-            key === "country"
-          ) {
-            options[key] = uniq(data.map((item: Person) => item[key]));
-          }
-        });
-        setFilterOptions(options);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, []);
+  const loadMoreData = () => {
+    if (data.length < totalUsers) {
+      loadData(start, PAGE_SIZE);
+    }
+  };
 
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
+    const element = tableContainerRef.current;
+    if (!element) {
+      return;
+    }
 
-  useEffect(() => {
-    setFilteredUsers(filteredData.length);
-  }, [filteredData]);
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLDivElement;
+      const bottom =
+        target.scrollHeight - target.scrollTop === target.clientHeight;
+      if (bottom) {
+        loadMoreData();
+      }
+    };
+
+    element.addEventListener("scroll", handleScroll);
+    return () => element.removeEventListener("scroll", handleScroll);
+  }, [tableContainerRef, loadMoreData]);
 
   return (
     <>
       <NavBar />
-      <div
-        className={`flex flex-col min-h-screen ${
-          darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"
-        }`}
-      >
+      <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
         <div className="flex flex-row-reverse">
           {isSidebarOpen && (
-            <div
-              className={`w-52 transition-all overflow-y-auto ${
-                darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"
-              } z-10 shadow-lg rounded-r-lg`}
-            >
+            <div className={`w-52 transition-all overflow-y-auto ${darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"} z-10 shadow-lg rounded-r-lg`}>
               <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Filter Options</h2>
                 {Object.keys(filterOptions).map((column) => (
                   <details key={column} className="mb-4">
                     <summary className="font-semibold mb-2">
-                      {column === "dateofbirth"
-                        ? "Age"
-                        : capitalizeFirstLetter(column)}
+                      {column === "dateofbirth" ? "Age" : capitalizeFirstLetter(column)}
                     </summary>
                     {column === "dateofbirth" ? (
                       <>
@@ -323,11 +328,7 @@ const UsersTable: React.FC = () => {
                             type="radio"
                             name="ageFilterType"
                             checked={filterValues.age !== undefined}
-                            onChange={() =>
-                              handleFilterChange("age", "specific", {
-                                checked: true,
-                              })
-                            }
+                            onChange={() => handleFilterChange("age", "specific", { checked: true })}
                             className="mr-2"
                           />
                           <label>Specific Age</label>
@@ -337,11 +338,7 @@ const UsersTable: React.FC = () => {
                             type="radio"
                             name="ageFilterType"
                             checked={filterValues.age === undefined}
-                            onChange={() =>
-                              handleFilterChange("age", "range", {
-                                checked: true,
-                              })
-                            }
+                            onChange={() => handleFilterChange("age", "range", { checked: true })}
                             className="mr-2"
                           />
                           <label>Age Range</label>
@@ -351,11 +348,7 @@ const UsersTable: React.FC = () => {
                             <input
                               type="text"
                               placeholder="Enter Age"
-                              onChange={(e) =>
-                                handleFilterChange("age", e.target.value, {
-                                  checked: true,
-                                })
-                              }
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
                               className="border rounded-lg px-2 py-1"
                             />
                           </div>
@@ -365,22 +358,14 @@ const UsersTable: React.FC = () => {
                             <input
                               type="text"
                               placeholder="Min"
-                              onChange={(e) =>
-                                handleFilterChange("age", e.target.value, {
-                                  checked: true,
-                                })
-                              }
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
                               className="border rounded-l-lg px-2 py-1 mr-0.5 w-16"
                             />
                             <span className="text-gray-600">-</span>
                             <input
                               type="text"
                               placeholder="Max"
-                              onChange={(e) =>
-                                handleFilterChange("age", e.target.value, {
-                                  checked: true,
-                                })
-                              }
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
                               className="border rounded-r-lg px-2 py-1 ml-0.5 w-16"
                             />
                           </div>
@@ -391,14 +376,8 @@ const UsersTable: React.FC = () => {
                         <div key={option} className="flex items-center mb-2">
                           <input
                             type="checkbox"
-                            checked={
-                              filterValues[column]?.includes(option) || false
-                            }
-                            onChange={(e) =>
-                              handleFilterChange(column, option, {
-                                checked: e.target.checked,
-                              })
-                            }
+                            checked={filterValues[column]?.includes(option) || false}
+                            onChange={(e) => handleFilterChange(column, option, { checked: e.target.checked })}
                             className="mr-2"
                           />
                           <label>{option}</label>
@@ -426,79 +405,41 @@ const UsersTable: React.FC = () => {
           )}
           <div className="flex-1 px-8 py-12">
             <div className="flex items-center justify-between">
-              <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">
-                People of iTribe
-              </h1>
+              <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
               <button
                 onClick={handleSidebarToggle}
-                className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${
-                  darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"
-                } font-semibold focus:outline-none`}
+                className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
               >
                 <FaFilter className="inline-block mr-2" />
                 Filter Options
               </button>
             </div>
             <div className="mx-auto max-w-4xl mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-              <div
-                ref={tableContainerRef}
-                onScroll={handleScroll}
-                className="overflow-y-auto h-96"
-              >
-                <table
-                  className={`w-full table-auto ${
-                    darkMode ? "bg-gray-800" : "bg-white"
-                  }`}
-                >
+              <div onScroll={handleScroll} className="overflow-y-auto h-96" ref={tableContainerRef}>
+                <table className={`w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
-                      <tr
-                        key={headerGroup.id}
-                        className={`${
-                          darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"
-                        } sticky top-0`}
-                      >
+                      <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
                         {headerGroup.headers.map((header) => (
-                          <th
-                            key={header.id}
-                            className="py-3 px-5 text-left border-r border-b border-green-700"
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
+                          <th key={header.id} className="py-3 px-5 text-left border-r border-b border-green-700">
+                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
                         ))}
                       </tr>
                     ))}
                   </thead>
-                  <tbody
-                    className={darkMode ? "text-green-300" : "text-green-700"}
-                  >
-                    {table.getRowModel().rows.map((row, index) => (
+                  <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
+                    {table.getRowModel().rows.slice(0, end).map((row, index) => (
                       <tr
                         key={row.id}
-                        className={
-                          index % 2 === 0
-                            ? darkMode
-                              ? "bg-gray-800"
-                              : "bg-white"
-                            : darkMode
-                            ? "bg-gray-700"
-                            : "bg-gray-200"
-                        }
+                        className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
                             className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
                           >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}
                       </tr>
@@ -506,11 +447,7 @@ const UsersTable: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              <p
-                className={`text-2xl text-green-300 ${
-                  darkMode ? "dark:text-green-200" : ""
-                }`}
-              >
+              <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
                 Displaying {filteredUsers} of {totalUsers} users.
               </p>
             </div>
