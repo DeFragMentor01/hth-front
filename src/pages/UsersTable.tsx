@@ -25,64 +25,264 @@ type Person = {
   [key: string]: string | number;
 };
 
+const PAGE_SIZE = 50; // This can be changed based on your needs
+
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
   const [convertedData, setConvertedData] = useState<Person[]>([]);
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState(0);
-  const [end, setEnd] = useState(50);
+  const [start, setStart] = useState(0);
   const [selectedColumns, setSelectedColumns] = useState<{ [key: string]: boolean }>({});
   const [filterValues, setFilterValues] = useState<{ [key: string]: string[] }>({});
   const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}/users?_page=${page}&_limit=50`
-      );
-      const { data } = response;
-      const converted = data.map((person: Person) => ({
-        ...person,
-        age: calculateAge(new Date(person.dateofbirth)),
-      }));
+  const table = useReactTable({
+    data: filteredData,
+    columns: useMemo(() => {
+      const columnHelper = createColumnHelper<Person>();
 
-      setData((prevData) => [...prevData, ...data]);
-      setTotalUsers((prevTotalUsers) => prevTotalUsers + data.length);
-      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
-      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
+      return [
+        columnHelper.accessor("firstname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>First Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("lastname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Last Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("username", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Username</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("age", {
+          header: () => <span>Age</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("gender", {
+          header: () => "Gender",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("village", {
+          header: () => "Village",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("community", {
+          header: () => "District",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("city", {
+          header: () => "City",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("state", {
+          header: () => "Province",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("country", {
+          header: () => "Country",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+      ];
+    }, []),
+    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
+  });
 
-      const options: { [key: string]: string[] } = {};
-      Object.keys(data[0]).forEach((key) => {
+  const capitalizeFirstLetter = (string: string) => {
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
+  };  
+
+  const calculateAge = (birthDate: Date): number => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  };
+
+  const applyFilters = useCallback(() => {
+    if (convertedData.length > 0) {
+      const newFilteredData = convertedData.filter((data) => {
         if (
-          key === "age" ||
-          key === "village" ||
-          key === "city" ||
-          key === "community" ||
-          key === "state" ||
-          key === "country"
+          filterValues.age &&
+          filterValues.age.length > 0 &&
+          data.age !== parseInt(filterValues.age[0])
         ) {
-          options[key] = uniq(data.map((item: Person) => item[key]));
+          return false;
         }
+        if (
+          filterValues.village &&
+          filterValues.village.length > 0 &&
+          !filterValues.village.includes(data.village.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.city &&
+          filterValues.city.length > 0 &&
+          !filterValues.city.includes(data.city.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.community &&
+          filterValues.community.length > 0 &&
+          !filterValues.community.includes(data.community.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.state &&
+          filterValues.state.length > 0 &&
+          !filterValues.state.includes(data.state.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.country &&
+          filterValues.country.length > 0 &&
+          !filterValues.country.includes(data.country.toString())
+        ) {
+          return false;
+        }
+        return true;
       });
-      setFilterOptions(options);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+      setFilteredData(newFilteredData);
+    }
+  }, [convertedData, filterValues]);
+
+  const handleFilterChange = useCallback(
+    (column: string, value: string, { checked }: { checked: boolean }) => {
+      setFilterValues((prevFilterValues) => {
+        const newFilterValues = { ...prevFilterValues };
+        newFilterValues[column] = checked
+          ? [...(newFilterValues[column] || []), value]
+          : (newFilterValues[column] || []).filter(
+              (item: string) => item !== value
+            );
+        if (newFilterValues[column].length === 0) {
+          delete newFilterValues[column];
+        }
+        return newFilterValues;
+      });
+    },
+    []
+  );
+
+  const handleSidebarToggle = () => {
+    setIsSidebarOpen((prevIsSidebarOpen) => !prevIsSidebarOpen);
+  };
+
+  const handleSidebarClose = () => {
+    setIsSidebarOpen(false);
+  };
+
+  const handleFilterReset = () => {
+    setFilterValues({});
+    setFilteredData(convertedData); // Reset the filtered data to all users
+  };
+
+  const loadMoreData = () => {
+    if (data.length < totalUsers) {
+      loadData(start, PAGE_SIZE);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom =
+      e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
+      e.currentTarget.clientHeight;
+    if (bottom) {
+      loadMoreData();
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [page]);
+    loadData(start, PAGE_SIZE);
+  }, [start]);
+
+  const loadData = (start: number, limit: number) => {
+    axios
+      .get(`${process.env.REACT_APP_BASE_URL}/users`, {
+        params: {
+          start: start,
+          limit: limit,
+        },
+      })
+      .then((response) => {
+        const { data, total } = response.data;
+        const converted = data.map((person: Person) => ({
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
+
+        if (start === 0) {
+          setData(converted);
+        } else {
+          setData((prevData) => [...prevData, ...converted]);
+        }
+
+        setTotalUsers(total);
+        setStart((prevStart) => prevStart + PAGE_SIZE);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  };
+
+  useEffect(() => {
+    axios
+      .get(process.env.REACT_APP_BASE_URL + '/users')
+      .then((response) => {
+        const { data } = response;
+        const converted = data.map((person: Person) => ({
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
+
+        setData(converted);
+        setTotalUsers(data.length);
+        setConvertedData(converted);
+        setFilteredData(converted);
+
+        const options: { [key: string]: string[] } = {};
+        Object.keys(data[0]).forEach((key) => {
+          if (
+            key === "age" ||
+            key === "village" ||
+            key === "city" ||
+            key === "community" ||
+            key === "state" ||
+            key === "country"
+          ) {
+            options[key] = uniq(data.map((item: Person) => item[key]));
+          }
+        });
+        setFilterOptions(options);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, []);
 
   useEffect(() => {
     applyFilters();
@@ -92,67 +292,29 @@ const UsersTable: React.FC = () => {
     setFilteredUsers(filteredData.length);
   }, [filteredData]);
 
-  const table = useReactTable({
-    data: filteredData.slice(0, end),
-    columns: useMemo(() => {
-      const columns = createColumnHelper();
-      return Object.keys(data[0]).map((key) => {
-        const column = columns.create(key, {
-          accessor: key as keyof Person,
-        });
-        column.sortable = true;
-        if (key === "age") column.flexWidth = 1;
-        return column;
-      });
-    }, [data]),
-  });
-
-  const onFilterChange = (key: string, value: string) => {
-    setFilterValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const onColumnSelect = (key: string, selected: boolean) => {
-    setSelectedColumns((prev) => ({ ...prev, [key]: selected }));
-  };
-
-  const loadMoreData = () => {
-    if (totalUsers > end) {
-      setEnd((prevEnd) => prevEnd + 50);
-    }
-  };
-
-  useEffect(() => {
-    const element = tableContainerRef.current;
-    if (!element) {
-      return;
-    }
-
-    const handleScroll = (e: any) => {
-      const bottom =
-        e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-      if (bottom) {
-        loadMoreData();
-      }
-    };
-
-    element.addEventListener("scroll", handleScroll);
-    return () => element.removeEventListener("scroll", handleScroll);
-  }, [tableContainerRef, loadMoreData]);
-
-
   return (
     <>
       <NavBar />
-      <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
+      <div
+        className={`flex flex-col min-h-screen ${
+          darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"
+        }`}
+      >
         <div className="flex flex-row-reverse">
           {isSidebarOpen && (
-            <div className={`w-52 transition-all overflow-y-auto ${darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"} z-10 shadow-lg rounded-r-lg`}>
+            <div
+              className={`w-52 transition-all overflow-y-auto ${
+                darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"
+              } z-10 shadow-lg rounded-r-lg`}
+            >
               <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Filter Options</h2>
                 {Object.keys(filterOptions).map((column) => (
                   <details key={column} className="mb-4">
                     <summary className="font-semibold mb-2">
-                      {column === "dateofbirth" ? "Age" : capitalizeFirstLetter(column)}
+                      {column === "dateofbirth"
+                        ? "Age"
+                        : capitalizeFirstLetter(column)}
                     </summary>
                     {column === "dateofbirth" ? (
                       <>
@@ -161,7 +323,11 @@ const UsersTable: React.FC = () => {
                             type="radio"
                             name="ageFilterType"
                             checked={filterValues.age !== undefined}
-                            onChange={() => handleFilterChange("age", "specific", { checked: true })}
+                            onChange={() =>
+                              handleFilterChange("age", "specific", {
+                                checked: true,
+                              })
+                            }
                             className="mr-2"
                           />
                           <label>Specific Age</label>
@@ -171,7 +337,11 @@ const UsersTable: React.FC = () => {
                             type="radio"
                             name="ageFilterType"
                             checked={filterValues.age === undefined}
-                            onChange={() => handleFilterChange("age", "range", { checked: true })}
+                            onChange={() =>
+                              handleFilterChange("age", "range", {
+                                checked: true,
+                              })
+                            }
                             className="mr-2"
                           />
                           <label>Age Range</label>
@@ -181,7 +351,11 @@ const UsersTable: React.FC = () => {
                             <input
                               type="text"
                               placeholder="Enter Age"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              onChange={(e) =>
+                                handleFilterChange("age", e.target.value, {
+                                  checked: true,
+                                })
+                              }
                               className="border rounded-lg px-2 py-1"
                             />
                           </div>
@@ -191,14 +365,22 @@ const UsersTable: React.FC = () => {
                             <input
                               type="text"
                               placeholder="Min"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              onChange={(e) =>
+                                handleFilterChange("age", e.target.value, {
+                                  checked: true,
+                                })
+                              }
                               className="border rounded-l-lg px-2 py-1 mr-0.5 w-16"
                             />
                             <span className="text-gray-600">-</span>
                             <input
                               type="text"
                               placeholder="Max"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              onChange={(e) =>
+                                handleFilterChange("age", e.target.value, {
+                                  checked: true,
+                                })
+                              }
                               className="border rounded-r-lg px-2 py-1 ml-0.5 w-16"
                             />
                           </div>
@@ -209,8 +391,14 @@ const UsersTable: React.FC = () => {
                         <div key={option} className="flex items-center mb-2">
                           <input
                             type="checkbox"
-                            checked={filterValues[column]?.includes(option) || false}
-                            onChange={(e) => handleFilterChange(column, option, { checked: e.target.checked })}
+                            checked={
+                              filterValues[column]?.includes(option) || false
+                            }
+                            onChange={(e) =>
+                              handleFilterChange(column, option, {
+                                checked: e.target.checked,
+                              })
+                            }
                             className="mr-2"
                           />
                           <label>{option}</label>
@@ -238,41 +426,79 @@ const UsersTable: React.FC = () => {
           )}
           <div className="flex-1 px-8 py-12">
             <div className="flex items-center justify-between">
-              <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
+              <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">
+                People of iTribe
+              </h1>
               <button
                 onClick={handleSidebarToggle}
-                className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
+                className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${
+                  darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"
+                } font-semibold focus:outline-none`}
               >
                 <FaFilter className="inline-block mr-2" />
                 Filter Options
               </button>
             </div>
             <div className="mx-auto max-w-4xl mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-              <div onScroll={handleScroll} className="overflow-y-auto h-96">
-                <table className={`w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <div
+                ref={tableContainerRef}
+                onScroll={handleScroll}
+                className="overflow-y-auto h-96"
+              >
+                <table
+                  className={`w-full table-auto ${
+                    darkMode ? "bg-gray-800" : "bg-white"
+                  }`}
+                >
                   <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
+                      <tr
+                        key={headerGroup.id}
+                        className={`${
+                          darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"
+                        } sticky top-0`}
+                      >
                         {headerGroup.headers.map((header) => (
-                          <th key={header.id} className="py-3 px-5 text-left border-r border-b border-green-700">
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                          <th
+                            key={header.id}
+                            className="py-3 px-5 text-left border-r border-b border-green-700"
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
                           </th>
                         ))}
                       </tr>
                     ))}
                   </thead>
-                  <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                    {table.getRowModel().rows.slice(0, end).map((row, index) => (
+                  <tbody
+                    className={darkMode ? "text-green-300" : "text-green-700"}
+                  >
+                    {table.getRowModel().rows.map((row, index) => (
                       <tr
                         key={row.id}
-                        className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
+                        className={
+                          index % 2 === 0
+                            ? darkMode
+                              ? "bg-gray-800"
+                              : "bg-white"
+                            : darkMode
+                            ? "bg-gray-700"
+                            : "bg-gray-200"
+                        }
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
                             className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
                           >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
                           </td>
                         ))}
                       </tr>
@@ -280,7 +506,11 @@ const UsersTable: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
+              <p
+                className={`text-2xl text-green-300 ${
+                  darkMode ? "dark:text-green-200" : ""
+                }`}
+              >
                 Displaying {filteredUsers} of {totalUsers} users.
               </p>
             </div>
@@ -289,7 +519,6 @@ const UsersTable: React.FC = () => {
       </div>
     </>
   );
-  
 };
 
 export default UsersTable;
