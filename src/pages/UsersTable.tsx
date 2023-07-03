@@ -25,7 +25,7 @@ type Person = {
   [key: string]: string | number;
 };
 
-const PAGE_SIZE = 50; // This can be changed based on your needs
+const PAGE_SIZE = 100; // This can be changed based on your needs
 
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
