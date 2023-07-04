@@ -139,20 +139,26 @@ map.on("click", "clusters", function (e) {
 
   if (features.length > 0 && features[0]?.properties?.cluster_id) {
     var clusterId = features[0].properties.cluster_id;
-    map.getSource("villages").getClusterExpansionZoom(clusterId, function (
-      err,
-      zoom
-    ) {
-      if (err) return;
 
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom: zoom,
+    map.getSource("villages").getClusterLeaves(clusterId, Infinity, 0, function (
+      error,
+      clusterFeatures
+    ) {
+      if (error) return;
+
+      var bounds = new mapboxgl.LngLatBounds();
+
+      clusterFeatures.forEach(function (feature) {
+        bounds.extend(feature.geometry.coordinates);
+      });
+
+      map.fitBounds(bounds, {
+        padding: 20,
+        maxZoom: 14,
       });
     });
   }
 });
-
     
     map.on("click", "unclustered-point", function (e) {
       var coordinates = e.features[0].geometry.coordinates.slice();
