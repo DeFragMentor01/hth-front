@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
-import itribeSymbol from "../assets/itribes-symbol.png";
+// import itribeSymbol from "../assets/itribes-symbol.png";
 import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -34,9 +34,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const darkMode = useRecoilValue(darkModeAtom);
-  const [currentPopup, setCurrentPopup] = useState<mapboxgl.Popup | null>(
-    null
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [currentBounds, setCurrentBounds] = useState<LngLatBoundsLike>([
@@ -44,20 +41,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
     [180, 90],
   ]);
 
-  const filteredData = useMemo(
-    () =>
-      communitiesData
-        .filter((community) =>
-          community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .filter(
-          (community) => community.longitude !== null && community.latitude !== null
-        ),
-    [communitiesData, searchTerm]
-  );
-
   useEffect(() => {
-    if (!mapContainerRef.current || !filteredData.length) return;
+    if (!mapContainerRef.current) return;
     if (!mapRef.current) {
       mapboxgl.accessToken =
         "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
@@ -68,82 +53,20 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         zoom: 1,
         maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
       });
-  
-      // Add a 'load' event listener to the map
-      mapRef.current.on('load', () => {
-        filteredData.forEach((community) => {
-          const markerEl = document.createElement("div");
-          markerEl.className = "marker";
-          Object.assign(markerEl.style, markerStyle);
-  
-          const popup = new mapboxgl.Popup({
-            offset: 25,
-            closeButton: false,
-            closeOnClick: false,
-            className: darkMode ? "dark-mode-popup text-black" : "",
-          }).setHTML(
-            `<h3 class="${
-              darkMode ? "text-green-500" : ""
-            }">${community.village_name}</h3>`
-          );
-  
-          const marker = new mapboxgl.Marker(markerEl)
-            .setLngLat([
-              community.longitude as number,
-              community.latitude as number,
-            ] as LngLatLike)
-            .setPopup(popup)
-            .addTo(mapRef.current!);
-  
-          marker.getElement().addEventListener("click", () => {
-            const tribeInfo: TribeInfo = {
-              name: community.village_name,
-              population: community.population,
-              country: community.province,
-              city: community.district,
-              community: community.village_name,
-            };
-            handleMarkerClick(tribeInfo);
-          });
-        });
-      });
-    };
-
-    let newBounds: LngLatBoundsLike = [
-      [-180, -90],
-      [180, 90],
-    ];
-
-    if (filteredData.length === 1) {
-      const { longitude: lng, latitude: lat } = filteredData[0];
-      if (typeof lng === "number" && typeof lat === "number") {
-        const offset = 0.05; // Adjust the offset value to a smaller value
-        newBounds = [
-          [lng - offset, lat - offset],
-          [lng + offset, lat + offset],
-        ];
-      }
-    } else if (filteredData.length > 1) {
-      const lats = filteredData.map((community) => community.latitude as number);
-      const lngs = filteredData.map((community) => community.longitude as number);
-      newBounds = [
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)],
-      ];
     }
 
-    setCurrentBounds(newBounds);
+    setCurrentBounds([
+      [-180, -90],
+      [180, 90],
+    ]);
 
     return () => {
-      if (currentPopup) {
-        currentPopup.remove();
-      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, [filteredData, darkMode, mapRef, setCurrentBounds]);
+  }, []);
 
   useEffect(() => {
     if (mapRef.current) {
@@ -159,15 +82,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const clearSearch = () => {
     setSearchInput("");
     setSearchTerm("");
-  };
-
-  const markerStyle: React.CSSProperties = {
-    backgroundImage: `url(${itribeSymbol})`,
-    backgroundSize: "cover",
-    width: "25px",
-    height: "25px",
-    borderRadius: "50%",
-    cursor: "pointer",
   };
 
   return (
