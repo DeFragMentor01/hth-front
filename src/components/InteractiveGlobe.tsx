@@ -45,13 +45,13 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    
+
     mapboxgl.accessToken =
       "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [0, 0] as LngLatLike,
       zoom: 1,
       maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
@@ -69,17 +69,22 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 
   useEffect(() => {
     if (!mapRef.current || !communitiesData.length) return;
-    
+
     const filteredData = communitiesData
       .filter((community) =>
-        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
+        community.village_name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       )
-      .filter((community) => community.longitude !== null && community.latitude !== null);
+      .filter(
+        (community) =>
+          community.longitude !== null && community.latitude !== null
+      );
 
     // Remove old markers
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
-    
+
     // Create new markers
     filteredData.forEach((community) => {
       const markerEl = document.createElement("div");
@@ -103,9 +108,9 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           community.latitude as number,
         ] as LngLatLike)
         .setPopup(popup)
-        .addTo(mapRef.current);
+        .addTo(mapRef.current!); // Use non-null assertion operator here
 
-      marker.getElement().addEventListener("click", () => {
+      marker.getElement()!.addEventListener("click", () => {
         const tribeInfo: TribeInfo = {
           name: community.village_name,
           population: community.population,
@@ -115,7 +120,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         };
         handleMarkerClick(tribeInfo);
       });
-      
+
       markersRef.current.push(marker);
     });
 
@@ -125,7 +130,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         [-180, -90],
         [180, 90],
       ];
-    
+
       if (filteredData.length === 2) {
         const lng = filteredData[0].longitude;
         const lat = filteredData[0].latitude;
@@ -189,10 +194,17 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           placeholder="Search for a community..."
           className="w-64 text-black"
         />
-        <button type="submit" className="ml-2 px-4 py-2 bg-green-500 text-white rounded">
+        <button
+          type="submit"
+          className="ml-2 px-4 py-2 bg-green-500 text-white rounded"
+        >
           Search
         </button>
-        <button type="button" onClick={clearSearch} className="ml-2 px-4 py-2 bg-red-500 text-white rounded">
+        <button
+          type="button"
+          onClick={clearSearch}
+          className="ml-2 px-4 py-2 bg-red-500 text-white rounded"
+        >
           Clear
         </button>
       </form>
