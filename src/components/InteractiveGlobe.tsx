@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
 import itribeSymbol from "../assets/itribes-symbol.png";
 import globeSkin from "../assets/texture-earth.jpeg";
@@ -34,31 +34,40 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const darkMode = useRecoilValue(darkModeAtom);
-  const [currentPopup, setCurrentPopup] = useState<mapboxgl.Popup | null>(
-    null
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [bounds, setBounds] = useState<LngLatBoundsLike | null>(null);
+
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+
+  const filteredData = useMemo(
+    () =>
+      communitiesData
+        .filter((community) =>
+          community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter(
+          (community) =>
+            community.longitude !== null && community.latitude !== null
+        ),
+    [communitiesData, searchTerm]
+  );
 
   useEffect(() => {
-    if (!mapContainerRef.current || !communitiesData.length) return;
+    if (!mapContainerRef.current) return;
 
     mapboxgl.accessToken =
       "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [0, 0] as LngLatLike,
-      zoom: 1,
-      maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
-    });
-    
-    const filteredData = communitiesData
-      .filter((community) =>
-        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((community) => community.longitude !== null && community.latitude !== null);
+    if (!mapRef.current) {
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [0, 0] as LngLatLike,
+        zoom: 1,
+        maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
+      });
+    }
 
     filteredData.forEach((community) => {
       const markerEl = document.createElement("div");
@@ -82,7 +91,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           community.latitude as number,
         ] as LngLatLike)
         .setPopup(popup)
-        .addTo(map);
+        .addTo(mapRef.current);
 
       marker.getElement().addEventListener("click", () => {
         const tribeInfo: TribeInfo = {
@@ -96,54 +105,53 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       });
     });
 
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (bounds && mapRef.current) {
+      mapRef.current.fitBounds(bounds, { padding: 50 });
+    }
+  }, [bounds]);
+
+  useEffect(() => {
     if (filteredData.length > 0) {
-      const padding = 50;
-      let bounds: LngLatBoundsLike = [
+      let newBounds: LngLatBoundsLike = [
         [-180, -90],
         [180, 90],
       ];
-    
+
       if (filteredData.length === 2) {
         const lng = filteredData[0].longitude;
         const lat = filteredData[0].latitude;
         if (typeof lng === "number" && typeof lat === "number") {
-          const offset = 0.05; // Adjust the offset value to a smaller value
-          bounds = [
+          const offset = 0.05;
+          newBounds = [
             [lng - offset, lat - offset],
             [lng + offset, lat + offset],
           ];
-          console.log("fitBounds single", bounds);
         }
       } else {
         const lats = filteredData.map((community) => community.latitude as number);
         const lngs = filteredData.map((community) => community.longitude as number);
-        bounds = [
+        newBounds = [
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ];
-        console.log("fitBounds multiple", bounds);
       }
-    
-      map.fitBounds(bounds as mapboxgl.LngLatBoundsLike, { padding });
+
+      setBounds(newBounds);
     } else {
-      const worldBounds: LngLatBoundsLike = [
+      setBounds([
         [-180, -90],
         [180, 90],
-      ];
-      console.log("fitBounds world", worldBounds);
-      map.fitBounds(worldBounds as mapboxgl.LngLatBoundsLike);
+      ]);
     }
-    
-    
-    
-
-    return () => {
-      if (currentPopup) {
-        currentPopup.remove();
-      }
-      map.remove();
-    };
-  }, [communitiesData, searchTerm, darkMode]);
+  }, [filteredData]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -195,15 +203,15 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           <div className="ml-4">
             <button
               type="button"
+              className="text-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
               onClick={clearSearch}
-              className="text-gray-500 bg-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
             >
               ❌
             </button>
           </div>
         )}
       </form>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+      <div className="h-full" ref={mapContainerRef} />
     </div>
   );
 };
