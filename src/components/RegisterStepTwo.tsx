@@ -31,7 +31,7 @@ const RegisterStepTwo: React.FC = () => {
   const darkMode = useRecoilValue(darkModeAtom);
   const [currentForm, setCurrentForm] = useRecoilState(currentStepAtom);
   const [formData, setFormData] = useRecoilState(registrationDataState);
-  const { country, city, tribe, community, state } = formData;
+  const { country, city, village, community, state } = formData;
 
   const [errors, setErrors] = useState({
     country: "",
