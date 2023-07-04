@@ -55,7 +55,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
     });
 
     // Add the custom globe image to the map style.
-map.addImage("custom-globe", {globeSkin});
+map.addImage("custom-globe", "../assets/texture-earth.jpeg");
 
 // Set the globe image to the map.
 map.setStyle({
