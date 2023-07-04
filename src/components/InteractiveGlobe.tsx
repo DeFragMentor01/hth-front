@@ -44,7 +44,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
     if (!mapContainerRef.current) return;
     if (!mapRef.current) {
       mapboxgl.accessToken =
-        "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
+        "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xqb3d4bHd1MGJ5dTNkczk3N2VwdWhrNiJ9.7U3cdRrr-t8sU0lHu2G-rg";
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: "mapbox://styles/mapbox/streets-v12",
