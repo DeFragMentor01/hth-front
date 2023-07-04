@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
 import itribeSymbol from "../assets/itribes-symbol.png";
+import globeSkin from "../assets/texture-earth.jpeg";
 import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -44,6 +45,17 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 
     mapboxgl.accessToken =
       "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
+
+    // Add the custom globe image to the map style.
+map.addImage("custom-globe", {globeSkin});
+
+    map.setStyle({
+  style: {
+    terrain: {
+      source: "custom-globe",
+    },
+  },
+});
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
