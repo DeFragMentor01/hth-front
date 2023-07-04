@@ -12,6 +12,19 @@ import { darkModeAtom } from "../atoms";
 import { uniq } from "lodash";
 import { FaFilter } from "react-icons/fa";
 
+type Person = {
+  username: string;
+  dateofbirth: string;
+  gender: string;
+  tribe: string;
+  community: string;
+  city: string;
+  state: string;
+  country: string;
+  age: number;
+  [key: string]: string | number;
+};
+
 const PAGE_SIZE = 100; 
 
 const UsersTable: React.FC = () => {
