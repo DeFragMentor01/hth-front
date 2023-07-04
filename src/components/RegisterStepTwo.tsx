@@ -107,7 +107,7 @@ const RegisterStepTwo: React.FC = () => {
 
   const tribeOptions = useMemo(
     () =>
-      villages.map((village) => (
+      village.map((village) => (
         <option key={village} value={village}>
           {village}
         </option>
