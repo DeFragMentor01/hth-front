@@ -10,7 +10,7 @@ interface FormData {
   month: string;
   year: string;
   gender: string;
-  tribe: string;
+  village: string;
   community: string;
   city: string;
   state: string;
@@ -109,7 +109,7 @@ export const registrationDataState = atom<FormData>({
     month: '',
     year: '',
     gender: '',
-    tribe: '',
+    village: '',
     community: '',
     city: '',
     state: '',
