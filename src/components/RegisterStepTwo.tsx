@@ -12,7 +12,7 @@ interface StepTwoFormData {
   country: string;
 }
 
-const tribes: string[] = [
+const villages: string[] = [
   "Reuben",
   "Simeon",
   "Levi",
@@ -107,7 +107,7 @@ const RegisterStepTwo: React.FC = () => {
 
   const tribeOptions = useMemo(
     () =>
-      village.map((village) => (
+      villages.map((village) => (
         <option key={village} value={village}>
           {village}
         </option>
