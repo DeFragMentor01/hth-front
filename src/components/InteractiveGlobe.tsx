@@ -68,43 +68,46 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         zoom: 1,
         maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
       });
-    }
-
-    filteredData.forEach((community) => {
-      const markerEl = document.createElement("div");
-      markerEl.className = "marker";
-      Object.assign(markerEl.style, markerStyle);
-
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: false,
-        closeOnClick: false,
-        className: darkMode ? "dark-mode-popup text-black" : "",
-      }).setHTML(
-        `<h3 class="${
-          darkMode ? "text-green-500" : ""
-        }">${community.village_name}</h3>`
-      );
-
-      const marker = new mapboxgl.Marker(markerEl)
-        .setLngLat([
-          community.longitude as number,
-          community.latitude as number,
-        ] as LngLatLike)
-        .setPopup(popup)
-        .addTo(mapRef.current!);
-
-      marker.getElement().addEventListener("click", () => {
-        const tribeInfo: TribeInfo = {
-          name: community.village_name,
-          population: community.population,
-          country: community.province,
-          city: community.district,
-          community: community.village_name,
-        };
-        handleMarkerClick(tribeInfo);
+  
+      // Add a 'load' event listener to the map
+      mapRef.current.on('load', () => {
+        filteredData.forEach((community) => {
+          const markerEl = document.createElement("div");
+          markerEl.className = "marker";
+          Object.assign(markerEl.style, markerStyle);
+  
+          const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: false,
+            closeOnClick: false,
+            className: darkMode ? "dark-mode-popup text-black" : "",
+          }).setHTML(
+            `<h3 class="${
+              darkMode ? "text-green-500" : ""
+            }">${community.village_name}</h3>`
+          );
+  
+          const marker = new mapboxgl.Marker(markerEl)
+            .setLngLat([
+              community.longitude as number,
+              community.latitude as number,
+            ] as LngLatLike)
+            .setPopup(popup)
+            .addTo(mapRef.current!);
+  
+          marker.getElement().addEventListener("click", () => {
+            const tribeInfo: TribeInfo = {
+              name: community.village_name,
+              population: community.population,
+              country: community.province,
+              city: community.district,
+              community: community.village_name,
+            };
+            handleMarkerClick(tribeInfo);
+          });
+        });
       });
-    });
+    };
 
     let newBounds: LngLatBoundsLike = [
       [-180, -90],
