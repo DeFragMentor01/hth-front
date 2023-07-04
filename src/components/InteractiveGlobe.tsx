@@ -39,6 +39,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const [bounds, setBounds] = useState<LngLatBoundsLike | null>(null);
 
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   const filteredData = useMemo(
     () =>
@@ -83,6 +84,53 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   }, [bounds]);
 
   useEffect(() => {
+    // Remove old markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    if (filteredData.length > 0 && mapRef.current) {
+      filteredData.forEach((community) => {
+        const markerEl = document.createElement("div");
+        markerEl.className = "marker";
+        Object.assign(markerEl.style, markerStyle);
+
+        const popup = new mapboxgl.Popup({
+          offset: 25,
+          closeButton: false,
+          closeOnClick: false,
+          className: darkMode ? "dark-mode-popup text-black" : "",
+        }).setHTML(
+          `<h3 class="${
+            darkMode ? "text-green-500" : ""
+          }">${community.village_name}</h3>`
+        );
+
+        const marker = new mapboxgl.Marker(markerEl)
+          .setLngLat([
+            community.longitude as number,
+            community.latitude as number,
+          ] as LngLatLike)
+          .setPopup(popup);
+
+        markersRef.current.push(marker);
+
+        marker.getElement().addEventListener("click", () => {
+          const tribeInfo: TribeInfo = {
+            name: community.village_name,
+            population: community.population,
+            country: community.province,
+            city: community.district,
+            community: community.village_name,
+          };
+          handleMarkerClick(tribeInfo);
+        });
+
+        marker.addTo(mapRef.current);
+      });
+    }
+  }, [filteredData, darkMode]);
+
+  useEffect(() => {
     if (filteredData.length > 0) {
       let newBounds: LngLatBoundsLike = [
         [-180, -90],
@@ -120,46 +168,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       ]);
     }
   }, [filteredData]);
-
-  useEffect(() => {
-    if (filteredData.length === 0 || !mapRef.current) return;
-
-    filteredData.forEach((community) => {
-      const markerEl = document.createElement("div");
-      markerEl.className = "marker";
-      Object.assign(markerEl.style, markerStyle);
-
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: false,
-        closeOnClick: false,
-        className: darkMode ? "dark-mode-popup text-black" : "",
-      }).setHTML(
-        `<h3 class="${
-          darkMode ? "text-green-500" : ""
-        }">${community.village_name}</h3>`
-      );
-
-      const marker = new mapboxgl.Marker(markerEl)
-        .setLngLat([
-          community.longitude as number,
-          community.latitude as number,
-        ] as LngLatLike)
-        .setPopup(popup)
-        .addTo(mapRef.current);
-
-      marker.getElement().addEventListener("click", () => {
-        const tribeInfo: TribeInfo = {
-          name: community.village_name,
-          population: community.population,
-          country: community.province,
-          city: community.district,
-          community: community.village_name,
-        };
-        handleMarkerClick(tribeInfo);
-      });
-    });
-  }, [filteredData, darkMode]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
