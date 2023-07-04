@@ -43,6 +43,51 @@ const UsersTable: React.FC = () => {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+  axios
+    .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
+    .then((response) => {
+      const { data } = response;
+      const converted = data.users.map((person: Person) => ({
+        ...person,
+        age: calculateAge(new Date(person.dateofbirth)),
+      }));
+
+      setData((prevData) => [...prevData, ...converted]);
+      setTotalUsers(data.total);
+      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
+
+      const options: { [key: string]: string[] } = {};
+      if (data.users.length > 0) {
+        Object.keys(data.users[0]).forEach((key) => {
+          if (
+            key === "age" ||
+            key === "village" ||
+            key === "city" ||
+            key === "community" ||
+            key === "state" ||
+            key === "country"
+          ) {
+            options[key] = uniq(data.users.map((item: Person) => item[key]));
+          }
+        });
+        setFilterOptions(options);
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching data:", error);
+    });
+}, [page]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
+
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
+
   const table = useReactTable({
     data: filteredData,
     columns: useMemo(() => {
@@ -208,51 +253,7 @@ const UsersTable: React.FC = () => {
     setPage((prevPage) => prevPage + 1);
   }
 };
-
-
-  useEffect(() => {
-    axios
-       .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
-    .then((response) => {
-      const { data } = response;
-      const converted = data.users.map((person: Person) => ({
-        ...person,
-        age: calculateAge(new Date(person.dateofbirth)),
-      }));
-
-      setData((prevData) => [...prevData, ...data.users]);
-      setTotalUsers(data.users.length);
-      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
-      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
-
-        const options: { [key: string]: string[] } = {};
-        Object.keys(data.users[0]).forEach((key) => {
-          if (
-            key === "age" ||
-            key === "village" ||
-            key === "city" ||
-            key === "community" ||
-            key === "state" ||
-            key === "country"
-          ) {
-            options[key] = uniq(data.users.map((item: Person) => item[key]));
-          }
-        });
-        setFilterOptions(options);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, [page]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
-
-  useEffect(() => {
-    setFilteredUsers(filteredData.length);
-  }, [filteredData]);
-
+  
   return (
     <>
       <NavBar />
