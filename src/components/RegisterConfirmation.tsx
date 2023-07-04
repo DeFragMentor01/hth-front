@@ -27,7 +27,7 @@ const RegisterConfirmation = () => {
       ...userRegistrationData,
       dateofbirth: dateOfBirth,
     };
-
+    console.log(requestData);
     setLoading(true);
     setError("");
 
