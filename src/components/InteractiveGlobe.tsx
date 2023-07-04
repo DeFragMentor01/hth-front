@@ -63,7 +63,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
-        mapStyle: "mapbox://styles/mapbox/streets-v12",
+        style: "mapbox://styles/mapbox/streets-v12",
         center: [0, 0] as LngLatLike,
         zoom: 1,
         maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
