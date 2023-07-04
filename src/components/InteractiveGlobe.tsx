@@ -112,7 +112,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           ] as LngLatLike)
           .setPopup(popup);
       
-        marker.addTo(mapRef.current!);
+        mapRef.current?.addControl(marker);
         
         markersRef.current.push(marker);
 
