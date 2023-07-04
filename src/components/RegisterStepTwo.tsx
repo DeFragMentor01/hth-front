@@ -5,7 +5,7 @@ import RegisterButton from "./RegisterButton";
 import { animated, useSpring } from "react-spring";
 
 interface StepTwoFormData {
-  tribe: string;
+  village: string;
   community: string;
   city: string;
   state: string;
@@ -36,7 +36,7 @@ const RegisterStepTwo: React.FC = () => {
   const [errors, setErrors] = useState({
     country: "",
     city: "",
-    tribe: "",
+    village: "",
     state: "",
     community: "",
   });
@@ -65,7 +65,7 @@ const RegisterStepTwo: React.FC = () => {
       let newErrors = {
         country: "",
         city: "",
-        tribe: "",
+        village: "",
         community: "",
         state: "",
       };
@@ -82,7 +82,7 @@ const RegisterStepTwo: React.FC = () => {
       }
 
       if (!tribe) {
-        newErrors.tribe = "Please select your tribe";
+        newErrors.village = "Please select your village";
         hasErrors = true;
       }
 
@@ -102,14 +102,14 @@ const RegisterStepTwo: React.FC = () => {
         setCurrentForm((prevForm) => prevForm + 1);
       }
     },
-    [city, community, country, setCurrentForm, state, tribe]
+    [city, community, country, setCurrentForm, state, village]
   );
 
   const tribeOptions = useMemo(
     () =>
       tribes.map((tribe) => (
-        <option key={tribe} value={tribe}>
-          {tribe}
+        <option key={village} value={village}>
+          {village}
         </option>
       )),
     []
@@ -176,19 +176,19 @@ const RegisterStepTwo: React.FC = () => {
           {errors.city && <p className={errorStyles}>{errors.city}</p>}
         </div>
         <div className="mb-4">
-          <label htmlFor="tribe" className="block text-sm font-bold mb-2">
-            Tribe:
+          <label htmlFor="village" className="block text-sm font-bold mb-2">
+            Village:
           </label>
           <select
-            name="tribe"
-            value={tribe}
+            name="village"
+            value={village}
             onChange={handleInput}
             className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
           >
             <option value="">Select...</option>
             {tribeOptions}
           </select>
-          {errors.tribe && <p className={errorStyles}>{errors.tribe}</p>}
+          {errors.village && <p className={errorStyles}>{errors.village}</p>}
         </div>
         <div className="mb-4">
           <label htmlFor="community" className="block text-sm font-bold mb-2">
