@@ -4,17 +4,7 @@ import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-interface CommunityData {
-  population: number;
-  province: string;
-  district: string;
-  village_name: string;
-  longitude: number | null;
-  latitude: number | null;
-}
-
 interface InteractiveGlobeProps {
-  communitiesData: CommunityData[];
   handleMarkerClick: (tribeInfo: TribeInfo | null) => void;
 }
 
@@ -26,14 +16,10 @@ interface TribeInfo {
   community: string;
 }
 
-const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
-  communitiesData,
-  handleMarkerClick,
-}) => {
+const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({ handleMarkerClick }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const darkMode = useRecoilValue(darkModeAtom);
-  const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [currentBounds, setCurrentBounds] = useState<LngLatBoundsLike>([
     [-180, -90],
@@ -75,12 +61,12 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSearchTerm(searchInput);
+    // Perform search logic here
   };
 
   const clearSearch = () => {
     setSearchInput("");
-    setSearchTerm("");
+    // Perform clear logic here
   };
 
   return (
