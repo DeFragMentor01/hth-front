@@ -40,157 +40,121 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
- useEffect(() => {
-  if (!mapContainerRef.current || !communitiesData.length) return;
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  mapboxgl.accessToken =
-    "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
-
-  const map = new mapboxgl.Map({
-    container: mapContainerRef.current,
-    style: "mapbox://styles/mapbox/streets-v12",
-    center: [0, 0] as LngLatLike,
-    zoom: 1,
-    maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
-  });
-
-  map.on("load", function () {
-    map.addSource("villages", {
-      type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: communitiesData
-          .filter(
-            (community) =>
-              typeof community.longitude === "number" &&
-              typeof community.latitude === "number"
-          )
-          .map((community) => {
-            const coordinates: [number, number] = [
-              community.longitude || 0,
-              community.latitude || 0,
-            ];
-            return {
-              type: "Feature",
-              properties: {
-                village_name: community.village_name,
-                population: community.population,
-              },
-              geometry: {
-                type: "Point",
-                coordinates: coordinates,
-              },
-            };
-          }),
-      },
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50,
-    });
-
-    map.addLayer({
-      id: "clusters",
-      type: "circle",
-      source: "villages",
-      filter: ["has", "point_count"],
-      paint: {
-        "circle-color": [
-          "step",
-          ["get", "point_count"],
-          "#51bbd6",
-          100,
-          "#f1f075",
-          750,
-          "#f28cb1",
-        ],
-        "circle-radius": ["step", ["get", "point_count"], 20, 100, 30, 750, 40],
-      },
-    });
-
-    map.addLayer({
-      id: "cluster-count",
-      type: "symbol",
-      source: "villages",
-      filter: ["has", "point_count"],
-      layout: {
-        "text-field": "{point_count_abbreviated}",
-        "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-        "text-size": 12,
-      },
-    });
-
-    map.addLayer({
-      id: "unclustered-point",
-      type: "circle",
-      source: "villages",
-      filter: ["!", ["has", "point_count"]],
-      paint: {
-        "circle-color": "#11b4da",
-        "circle-radius": 4,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff",
-      },
-    });
-
-map.on("click", "clusters", function (e) {
-  var features = map.queryRenderedFeatures(e.point, {
-    layers: ["clusters"],
-  });
-
-  if (features.length > 0 && features[0]?.properties?.cluster_id) {
-    var clusterId = features[0].properties.cluster_id;
-
-    map.getSource("villages").getClusterLeaves(clusterId, Infinity, 0, function (
-      error,
-      clusterFeatures
-    ) {
-      if (error) return;
-
-      var bounds = new mapboxgl.LngLatBounds();
-
-      clusterFeatures.forEach(function (feature) {
-        bounds.extend(feature.geometry.coordinates);
-      });
-
-      map.fitBounds(bounds, {
-        padding: 20,
-        maxZoom: 14,
-      });
-    });
-  }
-});
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
     
-    map.on("click", "unclustered-point", function (e) {
-      var coordinates = e.features[0].geometry.coordinates.slice();
-      var village_name = e.features[0].properties.village_name;
+    mapboxgl.accessToken =
+      "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [0, 0] as LngLatLike,
+      zoom: 1,
+      maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
+    });
+
+    mapRef.current = map;
+
+    return () => {
+      if (currentPopup) {
+        currentPopup.remove();
       }
+      map.remove();
+    };
+  }, []);
 
-      new mapboxgl.Popup()
-        .setLngLat(coordinates)
-        .setHTML(`Village: ${village_name}`)
-        .addTo(map);
+  useEffect(() => {
+    if (!mapRef.current || !communitiesData.length) return;
+    
+    const filteredData = communitiesData
+      .filter((community) =>
+        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter((community) => community.longitude !== null && community.latitude !== null);
+
+    // Remove old markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+    
+    // Create new markers
+    filteredData.forEach((community) => {
+      const markerEl = document.createElement("div");
+      markerEl.className = "marker";
+      Object.assign(markerEl.style, markerStyle);
+
+      const popup = new mapboxgl.Popup({
+        offset: 25,
+        closeButton: false,
+        closeOnClick: false,
+        className: darkMode ? "dark-mode-popup text-black" : "",
+      }).setHTML(
+        `<h3 class="${
+          darkMode ? "text-green-500" : ""
+        }">${community.village_name}</h3>`
+      );
+
+      const marker = new mapboxgl.Marker(markerEl)
+        .setLngLat([
+          community.longitude as number,
+          community.latitude as number,
+        ] as LngLatLike)
+        .setPopup(popup)
+        .addTo(mapRef.current);
+
+      marker.getElement().addEventListener("click", () => {
+        const tribeInfo: TribeInfo = {
+          name: community.village_name,
+          population: community.population,
+          country: community.province,
+          city: community.district,
+          community: community.village_name,
+        };
+        handleMarkerClick(tribeInfo);
+      });
+      
+      markersRef.current.push(marker);
     });
 
-    map.on("mouseenter", "clusters", function () {
-      map.getCanvas().style.cursor = "pointer";
-    });
-
-    map.on("mouseleave", "clusters", function () {
-      map.getCanvas().style.cursor = "";
-    });
-
-    if (currentPopup) {
-      currentPopup.remove();
+    if (filteredData.length > 0) {
+      const padding = 50;
+      let bounds: LngLatBoundsLike = [
+        [-180, -90],
+        [180, 90],
+      ];
+    
+      if (filteredData.length === 2) {
+        const lng = filteredData[0].longitude;
+        const lat = filteredData[0].latitude;
+        if (typeof lng === "number" && typeof lat === "number") {
+          const offset = 0.1;
+          bounds = [
+            [lng - offset, lat - offset],
+            [lng + offset, lat + offset],
+          ];
+        }
+      } else if (filteredData.length > 2) {
+        bounds = filteredData.reduce(
+          ([west, south, east, north], { longitude, latitude }) => {
+            if (longitude !== null && latitude !== null) {
+              return [
+                Math.min(west, longitude),
+                Math.min(south, latitude),
+                Math.max(east, longitude),
+                Math.max(north, latitude),
+              ];
+            }
+            return [west, south, east, north];
+          },
+          [180, 90, -180, -90]
+        );
+      }
+      mapRef.current.fitBounds(bounds, { padding });
     }
-  });
-
-  return () => {
-    map.remove();
-  };
-}, [communitiesData, searchTerm, darkMode]);
+  }, [communitiesData, searchTerm, darkMode]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -212,45 +176,26 @@ map.on("click", "clusters", function (e) {
   };
 
   return (
-    <div
-      className={`map-container relative h-full ${
-        darkMode ? "bg-gray-800 text-white" : "bg-gray-200 text-green-700"
-      }`}
-    >
+    <div className="relative w-full h-full">
+      <div className="absolute inset-0" ref={mapContainerRef} />
       <form
         onSubmit={handleSearch}
-        className="absolute top-0 z-10 w-full flex justify-center p-4"
+        className="absolute top-10 left-10 bg-white p-5 rounded shadow-md"
       >
-        <div className="flex items-center w-3/5 bg-white bg-opacity-60 rounded-full shadow-xl">
-          <input
-            type="text"
-            placeholder="Find a village..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-l-full w-full py-2 px-4 text-gray-700 bg-transparent leading-tight focus:outline-none"
-          />
-          <div className="p-2">
-            <button
-              type="submit"
-              className="text-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
-            >
-              🔍
-            </button>
-          </div>
-        </div>
-        {searchInput && (
-          <div className="ml-4">
-            <button
-              type="button"
-              onClick={clearSearch}
-              className="text-gray-500 bg-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
-            >
-              ❌
-            </button>
-          </div>
-        )}
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search for a community..."
+          className="w-64 text-black"
+        />
+        <button type="submit" className="ml-2 px-4 py-2 bg-green-500 text-white rounded">
+          Search
+        </button>
+        <button type="button" onClick={clearSearch} className="ml-2 px-4 py-2 bg-red-500 text-white rounded">
+          Clear
+        </button>
       </form>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 };
