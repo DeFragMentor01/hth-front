@@ -39,6 +39,7 @@ const UsersTable: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pageSize, setPageSize] = useState(100); // Dynamic page size
 
+  const [end, setEnd] = useState(pageSize);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
