@@ -48,24 +48,12 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [0, 0] as LngLatLike,
       zoom: 1,
       maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
     });
-
-    // Add the custom globe image to the map style.
-map.addImage("custom-globe", "../assets/texture-earth.jpeg");
-
-// Set the globe image to the map.
-map.setStyle({
-  style: {
-    terrain: {
-      source: "custom-globe",
-    },
-  },
-});
-
+    
     const filteredData = communitiesData
       .filter((community) =>
         community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
