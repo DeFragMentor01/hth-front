@@ -81,7 +81,7 @@ const RegisterStepTwo: React.FC = () => {
         hasErrors = true;
       }
 
-      if (!tribe) {
+      if (!village) {
         newErrors.village = "Please select your village";
         hasErrors = true;
       }
@@ -107,7 +107,7 @@ const RegisterStepTwo: React.FC = () => {
 
   const tribeOptions = useMemo(
     () =>
-      tribes.map((tribe) => (
+      villages.map((village) => (
         <option key={village} value={village}>
           {village}
         </option>
@@ -133,7 +133,7 @@ const RegisterStepTwo: React.FC = () => {
       style={fadeIn}
     >
       <h2 className={`font-bold text-2xl mb-6 ${titleColor}`}>
-        Step Two: Location and Tribe
+        Step Two: Location and Village
       </h2>
       <form className="w-full max-w-md">
         <div className="mb-4">
