@@ -29,7 +29,7 @@ const PAGE_SIZE = 100; // This can be changed based on your needs
 
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [convertedData, setConvertedData] = useState<Person[]>([]);
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
