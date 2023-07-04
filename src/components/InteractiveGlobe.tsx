@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
 import itribeSymbol from "../assets/itribes-symbol.png";
+import globeSkin from "../assets/texture-earth.jpeg";
 import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -52,6 +53,18 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       zoom: 1,
       maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
     });
+
+    // Add the custom globe image to the map style.
+map.addImage("custom-globe", {globeSkin});
+
+// Set the globe image to the map.
+map.setStyle({
+  style: {
+    terrain: {
+      source: "custom-globe",
+    },
+  },
+});
 
     const filteredData = communitiesData
       .filter((community) =>
