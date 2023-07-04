@@ -132,12 +132,12 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       },
     });
 
-  map.on("click", "clusters", function (e) {
+map.on("click", "clusters", function (e) {
   var features = map.queryRenderedFeatures(e.point, {
     layers: ["clusters"],
   });
 
-  if (features.length > 0) {
+  if (features.length > 0 && features[0]?.properties?.cluster_id) {
     var clusterId = features[0].properties.cluster_id;
     map.getSource("villages").getClusterExpansionZoom(clusterId, function (
       err,
@@ -152,6 +152,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
     });
   }
 });
+
     
     map.on("click", "unclustered-point", function (e) {
       var coordinates = e.features[0].geometry.coordinates.slice();
