@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
 import itribeSymbol from "../assets/itribes-symbol.png";
-import globeSkin from "../assets/texture-earth.jpeg";
 import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -33,32 +32,43 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   handleMarkerClick,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
   const darkMode = useRecoilValue(darkModeAtom);
   const [currentPopup, setCurrentPopup] = useState<mapboxgl.Popup | null>(
     null
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [currentBounds, setCurrentBounds] = useState<LngLatBoundsLike>([
+    [-180, -90],
+    [180, 90],
+  ]);
+
+  const filteredData = useMemo(
+    () =>
+      communitiesData
+        .filter((community) =>
+          community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter(
+          (community) => community.longitude !== null && community.latitude !== null
+        ),
+    [communitiesData, searchTerm]
+  );
 
   useEffect(() => {
-    if (!mapContainerRef.current || !communitiesData.length) return;
-
-    mapboxgl.accessToken =
-      "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
-
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [0, 0] as LngLatLike,
-      zoom: 1,
-      maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
-    });
-    
-    const filteredData = communitiesData
-      .filter((community) =>
-        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((community) => community.longitude !== null && community.latitude !== null);
+    if (!mapContainerRef.current || !filteredData.length) return;
+    if (!mapRef.current) {
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [0, 0] as LngLatLike,
+        zoom: 1,
+        maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
+      });
+    }
 
     filteredData.forEach((community) => {
       const markerEl = document.createElement("div");
@@ -82,7 +92,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           community.latitude as number,
         ] as LngLatLike)
         .setPopup(popup)
-        .addTo(map);
+        .addTo(mapRef.current!);
 
       marker.getElement().addEventListener("click", () => {
         const tribeInfo: TribeInfo = {
@@ -96,54 +106,47 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       });
     });
 
-    if (filteredData.length > 0) {
-      const padding = 50;
-      let bounds: LngLatBoundsLike = [
-        [-180, -90],
-        [180, 90],
-      ];
-    
-      if (filteredData.length === 2) {
-        const lng = filteredData[0].longitude;
-        const lat = filteredData[0].latitude;
-        if (typeof lng === "number" && typeof lat === "number") {
-          const offset = 0.05; // Adjust the offset value to a smaller value
-          bounds = [
-            [lng - offset, lat - offset],
-            [lng + offset, lat + offset],
-          ];
-          console.log("fitBounds single", bounds);
-        }
-      } else {
-        const lats = filteredData.map((community) => community.latitude as number);
-        const lngs = filteredData.map((community) => community.longitude as number);
-        bounds = [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
+    let newBounds: LngLatBoundsLike = [
+      [-180, -90],
+      [180, 90],
+    ];
+
+    if (filteredData.length === 1) {
+      const { longitude: lng, latitude: lat } = filteredData[0];
+      if (typeof lng === "number" && typeof lat === "number") {
+        const offset = 0.05; // Adjust the offset value to a smaller value
+        newBounds = [
+          [lng - offset, lat - offset],
+          [lng + offset, lat + offset],
         ];
-        console.log("fitBounds multiple", bounds);
       }
-    
-      map.fitBounds(bounds as mapboxgl.LngLatBoundsLike, { padding });
-    } else {
-      const worldBounds: LngLatBoundsLike = [
-        [-180, -90],
-        [180, 90],
+    } else if (filteredData.length > 1) {
+      const lats = filteredData.map((community) => community.latitude as number);
+      const lngs = filteredData.map((community) => community.longitude as number);
+      newBounds = [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
       ];
-      console.log("fitBounds world", worldBounds);
-      map.fitBounds(worldBounds as mapboxgl.LngLatBoundsLike);
     }
-    
-    
-    
+
+    setCurrentBounds(newBounds);
 
     return () => {
       if (currentPopup) {
         currentPopup.remove();
       }
-      map.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
-  }, [communitiesData, searchTerm, darkMode]);
+  }, [filteredData, darkMode, mapRef, setCurrentBounds]);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.fitBounds(currentBounds, { padding: 50 });
+    }
+  }, [currentBounds]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -170,39 +173,37 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         darkMode ? "bg-gray-800 text-white" : "bg-gray-200 text-green-700"
       }`}
     >
-      <form
-        onSubmit={handleSearch}
-        className="absolute top-0 z-10 w-full flex justify-center p-4"
-      >
-        <div className="flex items-center w-3/5 bg-white bg-opacity-60 rounded-full shadow-xl">
-          <input
-            type="text"
-            placeholder="Find a village..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="rounded-l-full w-full py-2 px-4 text-gray-700 bg-transparent leading-tight focus:outline-none"
-          />
-          <div className="p-2">
+      <div className="absolute top-0 left-0 p-5 w-full">
+        <form onSubmit={handleSearch}>
+          <div className="flex items-center justify-between">
+            <input
+              className={`${
+                darkMode ? "bg-gray-200 text-black" : "bg-white"
+              } w-full p-2 rounded-lg mr-2 outline-none`}
+              placeholder="Search village..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
             <button
               type="submit"
-              className="text-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
+              className={`${
+                darkMode ? "bg-green-500 text-white" : "bg-green-700 text-white"
+              } p-2 rounded-lg`}
             >
-              🔍
+              Search
             </button>
-          </div>
-        </div>
-        {searchInput && (
-          <div className="ml-4">
             <button
               type="button"
+              className={`${
+                darkMode ? "bg-red-500 text-white" : "bg-red-700 text-white"
+              } p-2 rounded-lg ml-2`}
               onClick={clearSearch}
-              className="text-gray-500 bg-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
             >
-              ❌
+              Clear
             </button>
           </div>
-        )}
-      </form>
+        </form>
+      </div>
       <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
