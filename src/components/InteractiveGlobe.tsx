@@ -27,7 +27,7 @@ interface TribeInfo {
 }
 
 const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
-  // communitiesData,
+  communitiesData,
   handleMarkerClick,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
