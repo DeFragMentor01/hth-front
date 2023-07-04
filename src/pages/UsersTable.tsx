@@ -1,11 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
-import { useRecoilState } from 'recoil';
-import { darkModeAtom } from '../atoms';
-import { FaFilter } from 'react-icons/fa';
-import uniq from 'lodash/uniq';
-import { Person, createColumnHelper, flexRender, useReactTable } from '../utils';
-import NavBar from '../components/NavBar';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import axios from "axios";
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import NavBar from "../components/NavBar";
+import { useRecoilState } from "recoil";
+import { darkModeAtom } from "../atoms";
+import { uniq } from "lodash";
+import { FaFilter } from "react-icons/fa";
 
 const PAGE_SIZE = 100; 
 
