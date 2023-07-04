@@ -5,7 +5,7 @@ import { darkModeAtom } from '../atoms';
 import { FaFilter } from 'react-icons/fa';
 import uniq from 'lodash/uniq';
 import { Person, createColumnHelper, flexRender, useReactTable } from '../utils';
-import { NavBar } from './NavBar';
+import NavBar from '../components/NavBar';
 
 const PAGE_SIZE = 100; 
 
