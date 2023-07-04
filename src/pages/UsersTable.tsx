@@ -43,57 +43,119 @@ const UsersTable: React.FC = () => {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight;
-    if (bottom) {
-      setPage((prevPage) => prevPage + 1);
-    }
+  useEffect(() => {
+  axios
+    .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
+    .then((response) => {
+      const { data } = response;
+      const converted = data.users.map((person: Person) => ({
+        ...person,
+        age: calculateAge(new Date(person.dateofbirth)),
+      }));
+
+      setData((prevData) => [...prevData, ...converted]);
+      setTotalUsers(data.total);
+      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
+
+      const options: { [key: string]: string[] } = {};
+      if (data.users.length > 0) {
+        Object.keys(data.users[0]).forEach((key) => {
+          if (
+            key === "age" ||
+            key === "village" ||
+            key === "city" ||
+            key === "community" ||
+            key === "state" ||
+            key === "country"
+          ) {
+            options[key] = uniq(data.users.map((item: Person) => item[key]));
+          }
+        });
+        setFilterOptions(options);
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching data:", error);
+    });
+}, [page]);
+  
+  const table = useReactTable({
+    data: filteredData,
+    columns: useMemo(() => {
+      const columnHelper = createColumnHelper<Person>();
+
+      return [
+        columnHelper.accessor("firstname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>First Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("lastname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Last Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("username", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Username</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("age", {
+          header: () => <span>Age</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("gender", {
+          header: () => "Gender",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("village", {
+          header: () => "Village",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("community", {
+          header: () => "District",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("city", {
+          header: () => "City",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("state", {
+          header: () => "Province",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("country", {
+          header: () => "Country",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+      ];
+    }, []),
+    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
+  });
+
+  const capitalizeFirstLetter = (string: string) => {
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
   };
 
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
-
-  useEffect(() => {
-    setFilteredUsers(filteredData.length);
-  }, [filteredData]);
-
-  useEffect(() => {
-    axios
-      .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
-      .then((response) => {
-        const { data } = response;
-        const converted = data.users.map((person: Person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
-
-        setData((prevData) => [...prevData, ...converted]);
-        setTotalUsers(data.total);
-        setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
-        setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
-
-        const options: { [key: string]: string[] } = {};
-        if (data.users.length > 0) {
-          Object.keys(data.users[0]).forEach((key) => {
-            if (
-              key === "age" ||
-              key === "village" ||
-              key === "city" ||
-              key === "community" ||
-              key === "state" ||
-              key === "country"
-            ) {
-              options[key] = uniq(data.users.map((item: Person) => item[key]));
-            }
-          });
-          setFilterOptions(options);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-      });
-  }, [page]);
+  const calculateAge = (birthDate: Date): number => {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  };
 
   const applyFilters = useCallback(() => {
     if (convertedData.length > 0) {
@@ -177,134 +239,21 @@ const UsersTable: React.FC = () => {
     setFilteredData(convertedData); // Reset the filtered data to all users
   };
 
-  const calculateAge = (birthDate: Date): number => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
-
-  const capitalizeFirstLetter = (string: string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
-  };
-
-  const table = useReactTable({
-    data: filteredData,
-    columns: useMemo(() => {
-      const columnHelper = createColumnHelper<Person>();
-
-      return [
-        columnHelper.accessor("firstname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>First Name</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("lastname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Last Name</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("username", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Username</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("age", {
-          header: () => <span>Age</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("gender", {
-          header: () => "Gender",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("village", {
-          header: () => "Village",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("community", {
-          header: () => "District",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("city", {
-          header: () => "City",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("state", {
-          header: () => "Province",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("country", {
-          header: () => "Country",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-      ];
-    }, []),
-    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
-  });
-
-  return (
-    <>
-      <NavBar />
-      <div
-        className={`container ${darkMode ? 'dark' : ''}`}
-        ref={tableContainerRef}
-        onScroll={handleScroll}
-      >
-        <div className="row">
-          <div className="col">
-            <button className="btn btn-primary" onClick={() => setIsSidebarOpen(true)}>
-              <FaFilter /> Filter Options
-            </button>
-          </div>
-          <div className="col">
-            <h2>Total Users: {totalUsers}</h2>
-            <h2>Filtered Users: {filteredUsers}</h2>
-          </div>
-        </div>
-        <div className="table-wrapper" {...tableInstance.getTableProps()}>
-          <table>
-            <thead>
-              {tableInstance.headerGroups.map(headerGroup => (
-                <tr {...headerGroup.getHeaderGroupProps()}>
-                  {headerGroup.headers.map(column => (
-                    <th {...column.getHeaderProps()}>{column.render('Header')}</th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody {...tableInstance.getTableBodyProps()}>
-              {tableInstance.rows.map(row => {
-                tableInstance.prepareRow(row);
-                return (
-                  <tr {...row.getRowProps()}>
-                    {row.cells.map(cell => (
-                      <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </>
-  );
+ const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight;
+  if (bottom) {
+    setPage((prevPage) => prevPage + 1);
+  }
 };
 
-export default UsersTable;
+ useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
 
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
+  
   return (
     <>
       <NavBar />
