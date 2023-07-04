@@ -40,40 +40,39 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  useEffect(() => {
+ useEffect(() => {
     if (!mapContainerRef.current || !communitiesData.length) return;
 
-    mapboxgl.accessToken = "...";
+    mapboxgl.accessToken = "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [0, 0] as LngLatLike,
       zoom: 1,
       maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
     });
 
-    map.on("load", () => {
-      // Add a new source from our GeoJSON data and
-      // set the 'cluster' option to true.
+    map.on("load", function () {
       map.addSource("villages", {
         type: "geojson",
-        // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
-        // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
         data: {
           type: "FeatureCollection",
-          features: communitiesData.map(community => ({
-            type: "Feature",
-            properties: { village_name: community.village_name, population: community.population },
-            geometry: {
-              type: "Point",
-              coordinates: [community.longitude, community.latitude],
-            },
-          })),
+          features: communitiesData
+            .filter(
+              (community) =>
+                typeof community.longitude === "number" &&
+                typeof community.latitude === "number"
+            )
+            .map((community) => ({
+              type: "Feature",
+              properties: { village_name: community.village_name, population: community.population },
+              geometry: { type: "Point", coordinates: [community.longitude, community.latitude] },
+            })),
         },
         cluster: true,
-        clusterMaxZoom: 14, // Max zoom to cluster points on
-        clusterRadius: 50, // Radius of each cluster when clustering points (defaults to 50)
+        clusterMaxZoom: 14, 
+        clusterRadius: 50, 
       });
 
       map.addLayer({
@@ -91,15 +90,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
             750,
             "#f28cb1",
           ],
-          "circle-radius": [
-            "step",
-            ["get", "point_count"],
-            20,
-            100,
-            30,
-            750,
-            40,
-          ],
+          "circle-radius": ["step", ["get", "point_count"], 20, 100, 30, 750, 40],
         },
       });
 
@@ -128,143 +119,52 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         },
       });
 
-      // inspect a cluster on click
-      map.on('click', 'clusters', function (e) {
+      map.on("click", "clusters", function (e) {
         var features = map.queryRenderedFeatures(e.point, {
-          layers: ['clusters']
+          layers: ["clusters"],
         });
         var clusterId = features[0].properties.cluster_id;
-        map.getSource('villages').getClusterExpansionZoom(
+        map.getSource("villages").getClusterExpansionZoom(
           clusterId,
           function (err, zoom) {
             if (err) return;
 
             map.easeTo({
               center: features[0].geometry.coordinates,
-              zoom: zoom
+              zoom: zoom,
             });
           }
         );
       });
 
-      // When a click event occurs on a feature in
-      // the unclustered-point layer, open a popup at
-      // the location of the feature, with
-      // description HTML from its properties.
-      map.on('click', 'unclustered-point', function (e) {
+      map.on("click", "unclustered-point", function (e) {
         var coordinates = e.features[0].geometry.coordinates.slice();
-        var { village_name, population } = e.features[0].properties;
+        var village_name = e.features[0].properties.village_name;
 
-        // Ensure that if the map is zoomed out such that
-        // multiple copies of the feature are visible, the
-        // popup appears over the copy being pointed to.
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
 
         new mapboxgl.Popup()
           .setLngLat(coordinates)
-          .setHTML(
-            `Village: ${village_name}<br/>Population: ${population}`
-          )
+          .setHTML(`Village: ${village_name}`)
           .addTo(map);
       });
 
-      map.on('mouseenter', 'clusters', function () {
-        map.getCanvas().style.cursor = 'pointer';
+      map.on("mouseenter", "clusters", function () {
+        map.getCanvas().style.cursor = "pointer";
       });
-      map.on('mouseleave', 'clusters', function () {
-        map.getCanvas().style.cursor = '';
+
+      map.on("mouseleave", "clusters", function () {
+        map.getCanvas().style.cursor = "";
       });
-    });
-    
-    const filteredData = communitiesData
-      .filter((community) =>
-        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((community) => community.longitude !== null && community.latitude !== null);
 
-    filteredData.forEach((community) => {
-      const markerEl = document.createElement("div");
-      markerEl.className = "marker";
-      Object.assign(markerEl.style, markerStyle);
-
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: false,
-        closeOnClick: false,
-        className: darkMode ? "dark-mode-popup text-black" : "",
-      }).setHTML(
-        `<h3 class="${
-          darkMode ? "text-green-500" : ""
-        }">${community.village_name}</h3>`
-      );
-
-      const marker = new mapboxgl.Marker(markerEl)
-        .setLngLat([
-          community.longitude as number,
-          community.latitude as number,
-        ] as LngLatLike)
-        .setPopup(popup)
-        .addTo(map);
-
-      marker.getElement().addEventListener("click", () => {
-        const tribeInfo: TribeInfo = {
-          name: community.village_name,
-          population: community.population,
-          country: community.province,
-          city: community.district,
-          community: community.village_name,
-        };
-        handleMarkerClick(tribeInfo);
-      });
-    });
-
-    if (filteredData.length > 0) {
-      const padding = 50;
-      let bounds: LngLatBoundsLike = [
-        [-180, -90],
-        [180, 90],
-      ];
-    
-      if (filteredData.length === 2) {
-        const lng = filteredData[0].longitude;
-        const lat = filteredData[0].latitude;
-        if (typeof lng === "number" && typeof lat === "number") {
-          const offset = 0.05; // Adjust the offset value to a smaller value
-          bounds = [
-            [lng - offset, lat - offset],
-            [lng + offset, lat + offset],
-          ];
-          console.log("fitBounds single", bounds);
-        }
-      } else {
-        const lats = filteredData.map((community) => community.latitude as number);
-        const lngs = filteredData.map((community) => community.longitude as number);
-        bounds = [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
-        ];
-        console.log("fitBounds multiple", bounds);
-      }
-    
-      map.fitBounds(bounds as mapboxgl.LngLatBoundsLike, { padding });
-    } else {
-      const worldBounds: LngLatBoundsLike = [
-        [-180, -90],
-        [180, 90],
-      ];
-      console.log("fitBounds world", worldBounds);
-      map.fitBounds(worldBounds as mapboxgl.LngLatBoundsLike);
-    }
-    
-    
-    
-
-    return () => {
       if (currentPopup) {
         currentPopup.remove();
       }
+    });
+
+    return () => {
       map.remove();
     };
   }, [communitiesData, searchTerm, darkMode]);
