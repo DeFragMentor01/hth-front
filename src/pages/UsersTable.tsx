@@ -47,7 +47,7 @@ const UsersTable: React.FC = () => {
   axios
     .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
     .then((response) => {
-      const { data } = response;
+         const { data } = response;
       const converted = data.users.map((person: Person) => ({
         ...person,
         age: calculateAge(new Date(person.dateofbirth)),
