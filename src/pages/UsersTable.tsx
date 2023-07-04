@@ -79,15 +79,7 @@ const UsersTable: React.FC = () => {
       console.error("Error fetching data:", error);
     });
 }, [page]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
-
-  useEffect(() => {
-    setFilteredUsers(filteredData.length);
-  }, [filteredData]);
-
+  
   const table = useReactTable({
     data: filteredData,
     columns: useMemo(() => {
@@ -253,6 +245,14 @@ const UsersTable: React.FC = () => {
     setPage((prevPage) => prevPage + 1);
   }
 };
+
+ useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
+
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
   
   return (
     <>
