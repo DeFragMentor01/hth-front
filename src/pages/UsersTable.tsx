@@ -25,8 +25,6 @@ type Person = {
   [key: string]: string | number;
 };
 
-const PAGE_SIZE = 100; // This can be changed based on your needs
-
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
   const [page, setPage] = useState(1);
@@ -34,51 +32,60 @@ const UsersTable: React.FC = () => {
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState(0);
-  const [end, setEnd] = useState(PAGE_SIZE);
   const [selectedColumns, setSelectedColumns] = useState<{ [key: string]: boolean }>({});
   const [filterValues, setFilterValues] = useState<{ [key: string]: string[] }>({});
   const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(100); // Dynamic page size
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  axios
-    .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}`)
-    .then((response) => {
-      const { data } = response;
-      const converted = data.users.map((person: Person) => ({
-        ...person,
-        age: calculateAge(new Date(person.dateofbirth)),
-      }));
+    axios
+      .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}&pageSize=${pageSize}`) // Pass the pageSize parameter in the API request
+      .then((response) => {
+        const { data } = response;
+        const converted = data.users.map((person: Person) => ({
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
 
-      setData((prevData) => [...prevData, ...converted]);
-      setTotalUsers(data.total);
-      setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
-      setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
+        setData((prevData) => [...prevData, ...converted]);
+        setTotalUsers(data.total);
+        setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+        setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
 
-      const options: { [key: string]: string[] } = {};
-      if (data.users.length > 0) {
-        Object.keys(data.users[0]).forEach((key) => {
-          if (
-            key === "age" ||
-            key === "village" ||
-            key === "city" ||
-            key === "community" ||
-            key === "state" ||
-            key === "country"
-          ) {
-            options[key] = uniq(data.users.map((item: Person) => item[key]));
-          }
-        });
-        setFilterOptions(options);
-      }
-    })
-    .catch((error) => {
-      console.error("Error fetching data:", error);
-    });
-}, [page]);
+        const options: { [key: string]: string[] } = {};
+        if (data.users.length > 0) {
+          Object.keys(data.users[0]).forEach((key) => {
+            if (
+              key === "age" ||
+              key === "village" ||
+              key === "city" ||
+              key === "community" ||
+              key === "state" ||
+              key === "country"
+            ) {
+              options[key] = uniq(data.users.map((item: Person) => item[key]));
+            }
+          });
+          setFilterOptions(options);
+        }
+        
+        // Increase the page size after every additional 100 user data has been loaded
+        if (data.users.length === pageSize) {
+          setPageSize((prevPageSize) => prevPageSize + 100);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+      });
+  }, [page, pageSize]); // Add pageSize dependency
+
+  // Rest of the component code...
+};
+
   
   const table = useReactTable({
     data: filteredData,
