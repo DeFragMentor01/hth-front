@@ -111,8 +111,9 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
             community.latitude as number,
           ] as LngLatLike)
           .setPopup(popup);
-        .addTo(mapRef.current!);
-
+      
+        marker.addTo(mapRef.current!);
+        
         markersRef.current.push(marker);
 
         marker.getElement().addEventListener("click", () => {
