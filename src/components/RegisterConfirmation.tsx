@@ -240,15 +240,15 @@ const RegisterConfirmation = () => {
           </div>
           {/* Tribe Field */}
           <div className="mb-4">
-            <label htmlFor="tribe" className="block text-sm font-bold mb-2">
-              Tribe
+            <label htmlFor="village" className="block text-sm font-bold mb-2">
+              Village
             </label>
             <input
               type="text"
-              name="tribe"
-              id="tribe"
+              name="village"
+              id="village"
               className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.tribe || ""}
+              value={userRegistrationData?.village || ""}
               onChange={handleInput}
               required
             />
