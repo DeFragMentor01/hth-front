@@ -132,24 +132,27 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
       },
     });
 
-    map.on("click", "clusters", function (e) {
-      var features = map.queryRenderedFeatures(e.point, {
-        layers: ["clusters"],
+  map.on("click", "clusters", function (e) {
+  var features = map.queryRenderedFeatures(e.point, {
+    layers: ["clusters"],
+  });
+
+  if (features.length > 0) {
+    var clusterId = features[0].properties.cluster_id;
+    map.getSource("villages").getClusterExpansionZoom(clusterId, function (
+      err,
+      zoom
+    ) {
+      if (err) return;
+
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: zoom,
       });
-      var clusterId = features[0].properties.cluster_id;
-      map.getSource("villages").getClusterExpansionZoom(
-        clusterId,
-        function (err, zoom) {
-          if (err) return;
-
-          map.easeTo({
-            center: features[0].geometry.coordinates,
-            zoom: zoom,
-          });
-        }
-      );
     });
-
+  }
+});
+    
     map.on("click", "unclustered-point", function (e) {
       var coordinates = e.features[0].geometry.coordinates.slice();
       var village_name = e.features[0].properties.village_name;
