@@ -62,12 +62,67 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
     if (!mapRef.current) {
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: 'mapbox://styles/mapbox/streets-v11',
+        style: "mapbox://styles/mapbox/streets-v11",
         center: [0, 0] as LngLatLike,
         zoom: 1,
         maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
       });
     }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (bounds && mapRef.current) {
+      mapRef.current.fitBounds(bounds, { padding: 50 });
+    }
+  }, [bounds]);
+
+  useEffect(() => {
+    if (filteredData.length > 0) {
+      let newBounds: LngLatBoundsLike = [
+        [-180, -90],
+        [180, 90],
+      ];
+
+      if (filteredData.length === 2) {
+        const lng = filteredData[0].longitude;
+        const lat = filteredData[0].latitude;
+        if (typeof lng === "number" && typeof lat === "number") {
+          const offset = 0.05;
+          newBounds = [
+            [lng - offset, lat - offset],
+            [lng + offset, lat + offset],
+          ];
+        }
+      } else {
+        const lats = filteredData.map(
+          (community) => community.latitude as number
+        );
+        const lngs = filteredData.map(
+          (community) => community.longitude as number
+        );
+        newBounds = [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ];
+      }
+
+      setBounds(newBounds);
+    } else {
+      setBounds([
+        [-180, -90],
+        [180, 90],
+      ]);
+    }
+  }, [filteredData]);
+
+  useEffect(() => {
+    if (filteredData.length === 0 || !mapRef.current) return;
 
     filteredData.forEach((community) => {
       const markerEl = document.createElement("div");
@@ -104,54 +159,7 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         handleMarkerClick(tribeInfo);
       });
     });
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (bounds && mapRef.current) {
-      mapRef.current.fitBounds(bounds, { padding: 50 });
-    }
-  }, [bounds]);
-
-  useEffect(() => {
-    if (filteredData.length > 0) {
-      let newBounds: LngLatBoundsLike = [
-        [-180, -90],
-        [180, 90],
-      ];
-
-      if (filteredData.length === 2) {
-        const lng = filteredData[0].longitude;
-        const lat = filteredData[0].latitude;
-        if (typeof lng === "number" && typeof lat === "number") {
-          const offset = 0.05;
-          newBounds = [
-            [lng - offset, lat - offset],
-            [lng + offset, lat + offset],
-          ];
-        }
-      } else {
-        const lats = filteredData.map((community) => community.latitude as number);
-        const lngs = filteredData.map((community) => community.longitude as number);
-        newBounds = [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
-        ];
-      }
-
-      setBounds(newBounds);
-    } else {
-      setBounds([
-        [-180, -90],
-        [180, 90],
-      ]);
-    }
-  }, [filteredData]);
+  }, [filteredData, darkMode]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
