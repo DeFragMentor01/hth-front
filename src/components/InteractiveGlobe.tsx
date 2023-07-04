@@ -40,52 +40,26 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || !communitiesData.length) return;
 
     mapboxgl.accessToken =
       "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: 'mapbox://styles/mapbox/streets-v11',
       center: [0, 0] as LngLatLike,
       zoom: 1,
       maxBounds: [-180, -90, 180, 90] as LngLatBoundsLike,
     });
-
-    mapRef.current = map;
-
-    return () => {
-      if (currentPopup) {
-        currentPopup.remove();
-      }
-      map.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current || !communitiesData.length) return;
-
+    
     const filteredData = communitiesData
       .filter((community) =>
-        community.village_name
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
+        community.village_name.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .filter(
-        (community) =>
-          community.longitude !== null && community.latitude !== null
-      );
+      .filter((community) => community.longitude !== null && community.latitude !== null);
 
-    // Remove old markers
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-
-    // Create new markers
     filteredData.forEach((community) => {
       const markerEl = document.createElement("div");
       markerEl.className = "marker";
@@ -108,9 +82,9 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           community.latitude as number,
         ] as LngLatLike)
         .setPopup(popup)
-        .addTo(mapRef.current!); // Use non-null assertion operator here
+        .addTo(map);
 
-      marker.getElement()!.addEventListener("click", () => {
+      marker.getElement().addEventListener("click", () => {
         const tribeInfo: TribeInfo = {
           name: community.village_name,
           population: community.population,
@@ -120,8 +94,6 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         };
         handleMarkerClick(tribeInfo);
       });
-
-      markersRef.current.push(marker);
     });
 
     if (filteredData.length > 0) {
@@ -130,35 +102,47 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
         [-180, -90],
         [180, 90],
       ];
-
+    
       if (filteredData.length === 2) {
         const lng = filteredData[0].longitude;
         const lat = filteredData[0].latitude;
         if (typeof lng === "number" && typeof lat === "number") {
-          const offset = 0.1;
+          const offset = 0.05; // Adjust the offset value to a smaller value
           bounds = [
             [lng - offset, lat - offset],
             [lng + offset, lat + offset],
           ];
+          console.log("fitBounds single", bounds);
         }
-      } else if (filteredData.length > 2) {
-        bounds = filteredData.reduce(
-          ([west, south, east, north], { longitude, latitude }) => {
-            if (longitude !== null && latitude !== null) {
-              return [
-                Math.min(west, longitude),
-                Math.min(south, latitude),
-                Math.max(east, longitude),
-                Math.max(north, latitude),
-              ];
-            }
-            return [west, south, east, north];
-          },
-          [180, 90, -180, -90]
-        );
+      } else {
+        const lats = filteredData.map((community) => community.latitude as number);
+        const lngs = filteredData.map((community) => community.longitude as number);
+        bounds = [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ];
+        console.log("fitBounds multiple", bounds);
       }
-      mapRef.current.fitBounds(bounds, { padding });
+    
+      map.fitBounds(bounds as mapboxgl.LngLatBoundsLike, { padding });
+    } else {
+      const worldBounds: LngLatBoundsLike = [
+        [-180, -90],
+        [180, 90],
+      ];
+      console.log("fitBounds world", worldBounds);
+      map.fitBounds(worldBounds as mapboxgl.LngLatBoundsLike);
     }
+    
+    
+    
+
+    return () => {
+      if (currentPopup) {
+        currentPopup.remove();
+      }
+      map.remove();
+    };
   }, [communitiesData, searchTerm, darkMode]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -181,33 +165,45 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   };
 
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute inset-0" ref={mapContainerRef} />
+    <div
+      className={`map-container relative h-full ${
+        darkMode ? "bg-gray-800 text-white" : "bg-gray-200 text-green-700"
+      }`}
+    >
       <form
         onSubmit={handleSearch}
-        className="absolute top-10 left-10 bg-white p-5 rounded shadow-md"
+        className="absolute top-0 z-10 w-full flex justify-center p-4"
       >
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search for a community..."
-          className="w-64 text-black"
-        />
-        <button
-          type="submit"
-          className="ml-2 px-4 py-2 bg-green-500 text-white rounded"
-        >
-          Search
-        </button>
-        <button
-          type="button"
-          onClick={clearSearch}
-          className="ml-2 px-4 py-2 bg-red-500 text-white rounded"
-        >
-          Clear
-        </button>
+        <div className="flex items-center w-3/5 bg-white bg-opacity-60 rounded-full shadow-xl">
+          <input
+            type="text"
+            placeholder="Find a village..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="rounded-l-full w-full py-2 px-4 text-gray-700 bg-transparent leading-tight focus:outline-none"
+          />
+          <div className="p-2">
+            <button
+              type="submit"
+              className="text-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
+            >
+              🔍
+            </button>
+          </div>
+        </div>
+        {searchInput && (
+          <div className="ml-4">
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="text-gray-500 bg-white rounded-full p-2 focus:outline-none w-12 h-12 flex items-center justify-center"
+            >
+              ❌
+            </button>
+          </div>
+        )}
       </form>
+      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 };
