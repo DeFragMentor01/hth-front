@@ -83,10 +83,6 @@ const UsersTable: React.FC = () => {
       });
   }, [page, pageSize]); // Add pageSize dependency
 
-  // Rest of the component code...
-};
-
-  
   const table = useReactTable({
     data: filteredData,
     columns: useMemo(() => {
@@ -246,21 +242,23 @@ const UsersTable: React.FC = () => {
     setFilteredData(convertedData); // Reset the filtered data to all users
   };
 
- const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-  const bottom = e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight;
-  if (bottom) {
-    setPage((prevPage) => prevPage + 1);
-  }
-};
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const bottom =
+      e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
+      e.currentTarget.clientHeight;
+    if (bottom) {
+      setPage((prevPage) => prevPage + 1);
+    }
+  };
 
- useEffect(() => {
+  useEffect(() => {
     applyFilters();
   }, [applyFilters, filterValues]);
 
   useEffect(() => {
     setFilteredUsers(filteredData.length);
   }, [filteredData]);
-  
+
   return (
     <>
       <NavBar />
