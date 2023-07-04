@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatBoundsLike, LngLatLike } from "mapbox-gl";
-// import itribeSymbol from "../assets/itribes-symbol.png";
 import { useRecoilValue } from "recoil";
 import { darkModeAtom } from "../atoms";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -85,12 +84,8 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
   };
 
   return (
-    <div
-      className={`map-container relative h-full ${
-        darkMode ? "bg-gray-800 text-white" : "bg-gray-200 text-green-700"
-      }`}
-    >
-      <div className="absolute top-0 left-0 p-5 w-full">
+    <div className="map-container relative h-full">
+      <div className="absolute top-0 left-0 p-5 w-full z-10">
         <form onSubmit={handleSearch}>
           <div className="flex items-center justify-between">
             <input
@@ -121,7 +116,11 @@ const InteractiveGlobe: React.FC<InteractiveGlobeProps> = ({
           </div>
         </form>
       </div>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+      <div
+        ref={mapContainerRef}
+        style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}
+        className="z-0"
+      />
     </div>
   );
 };
