@@ -356,59 +356,59 @@ const UsersTable: React.FC = () => {
               </div>
             </div>
           )}
-        <div className="flex-1 px-8 py-12">
-            <div className="flex items-center justify-between">
-              <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
-              <button
-                onClick={handleSidebarToggle}
-                className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
-              >
-                <FaFilter className="inline-block mr-2" />
-                Filter Options
-              </button>
+  <div className="flex-1 px-8 py-12">
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
+            <button
+              onClick={handleSidebarToggle}
+              className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
+            >
+              <FaFilter className="inline-block mr-2" />
+              Filter Options
+            </button>
+          </div>
+          <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
+            <div onScroll={handleScroll} className="overflow-auto h-96">
+              <table className={`min-w-max w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id} className="py-3 px-5 text-left border-r border-b border-green-700 break-words max-w-sm">
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
+                  {table.getRowModel().rows.map((row, index) => (
+                    <tr
+                      key={row.id}
+                      className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words max-w-sm"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="mx-auto w-75 mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-              <div onScroll={handleScroll} className="overflow-auto h-96">
-                <table className={`min-w-max w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                  <thead>
-                    {table.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
-                        {headerGroup.headers.map((header) => (
-                          <th key={header.id} className="py-3 px-5 text-left border-r border-b border-green-700">
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                    {table.getRowModel().rows.map((row, index) => (
-                      <tr
-                        key={row.id}
-                        className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
-                          >
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
-                Displaying {filteredUsers} of {totalUsers} users.
-              </p>
-            </div>
+            <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
+              Displaying {filteredUsers} of {totalUsers} users.
+            </p>
           </div>
         </div>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 };
 
 export default UsersTable;
