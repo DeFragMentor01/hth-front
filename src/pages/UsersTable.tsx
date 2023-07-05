@@ -28,6 +28,7 @@ type Person = {
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
   const [page, setPage] = useState(1);
+    const [isModalOpen, setIsModalOpen] = useState(false);
   const [convertedData, setConvertedData] = useState<Person[]>([]);
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -260,13 +261,39 @@ const UsersTable: React.FC = () => {
     setFilteredUsers(filteredData.length);
   }, [filteredData]);
 
-  return (
-    <>
-      <NavBar />
-      <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
-        <div className="flex flex-row-reverse">
-          {isSidebarOpen && (
-            <div className={`w-52 transition-all overflow-y-auto ${darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"} z-50 shadow-lg rounded-r-lg`}>
+    // The function to open the modal
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  // The function to close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+return (
+  <>
+    <NavBar />
+    <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
+      <button
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        onClick={openModal}
+      >
+        Filter Options
+      </button>
+      {isModalOpen && (
+        <div
+          className="fixed z-10 inset-0 overflow-y-auto"
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeModal}></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+              className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}
+            >
               <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Filter Options</h2>
                 {Object.keys(filterOptions).map((column) => (
@@ -347,7 +374,7 @@ const UsersTable: React.FC = () => {
                     Reset
                   </button>
                   <button
-                    onClick={handleSidebarClose}
+                    onClick={closeModal}
                     className="px-3 py-1 border border-green-700 rounded-lg bg-green-700 text-white font-semibold focus:outline-none"
                   >
                     Close
@@ -355,55 +382,70 @@ const UsersTable: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
- <div className="flex-1 px-8 py-12">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
-            <button
-              onClick={handleSidebarToggle}
-              className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
-            >
-              <FaFilter className="inline-block mr-2" />
-              Filter Options
-            </button>
           </div>
-          <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-            <div onScroll={handleScroll} className="overflow-auto h-96">
-              <table className={`table-fixed ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
-                      {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="w-1/6 py-3 px-5 text-left border-r border-b border-green-700 break-words">
-                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                  {table.getRowModel().rows.map((row, index) => (
-                    <tr
-                      key={row.id}
-                      className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
-              Displaying {filteredUsers} of {totalUsers} users.
-            </p>
+        </div>
+      )}
+      <div className="flex-1 px-8 py-12">
+        <div className="flex items-center justify-between">
+          <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
+          <button
+            onClick={handleSidebarToggle}
+            className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
+          >
+            <FaFilter className="inline-block mr-2" />
+            Filter Options
+          </button>
+        </div>
+        <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
+          <div onScroll={handleScroll} className="overflow-auto h-96">
+            <table className={`table-fixed ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr
+                    key={headerGroup.id}
+                    className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}
+                  >
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="w-1/6 py-3 px-5 text-left border-r border-b border-green-700 break-words"
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
+                {table.getRowModel().rows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={
+                      index % 2 === 0
+                        ? darkMode
+                          ? "bg-gray-800"
+                          : "bg-white"
+                        : darkMode
+                        ? "bg-gray-700"
+                        : "bg-gray-200"
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
+            Displaying {filteredUsers} of {totalUsers} users.
+          </p>
         </div>
       </div>
     </div>
