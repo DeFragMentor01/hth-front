@@ -266,7 +266,7 @@ const UsersTable: React.FC = () => {
       <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
         <div className="flex flex-row-reverse">
           {isSidebarOpen && (
-            <div className={`w-52 transition-all overflow-y-auto ${darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"} z-10 shadow-lg rounded-r-lg`}>
+            <div className={`w-52 transition-all overflow-y-auto ${darkMode ? "bg-gray-700 text-green-200" : "bg-gray-200 text-green-700"} z-50 shadow-lg rounded-r-lg`}>
               <div className="p-4">
                 <h2 className="text-xl font-bold mb-4">Filter Options</h2>
                 {Object.keys(filterOptions).map((column) => (
@@ -356,7 +356,7 @@ const UsersTable: React.FC = () => {
               </div>
             </div>
           )}
-          <div className="flex-1 px-8 py-12">
+        <div className="flex-1 px-8 py-12">
             <div className="flex items-center justify-between">
               <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
               <button
@@ -368,8 +368,8 @@ const UsersTable: React.FC = () => {
               </button>
             </div>
             <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-              <div onScroll={handleScroll} className="overflow-y-auto h-96">
-                <table className={`w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <div onScroll={handleScroll} className="overflow-auto h-96">
+                <table className={`min-w-max w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                       <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
