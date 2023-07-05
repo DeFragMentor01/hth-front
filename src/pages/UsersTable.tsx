@@ -356,7 +356,7 @@ const UsersTable: React.FC = () => {
               </div>
             </div>
           )}
-  <div className="flex-1 px-8 py-12">
+ <div className="flex-1 px-8 py-12">
           <div className="flex items-center justify-between">
             <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
             <button
@@ -369,12 +369,12 @@ const UsersTable: React.FC = () => {
           </div>
           <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
             <div onScroll={handleScroll} className="overflow-auto h-96">
-              <table className={`min-w-max w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <table className={`table-fixed ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                 <thead>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id} className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}>
                       {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="py-3 px-5 text-left border-r border-b border-green-700 break-words max-w-sm">
+                        <th key={header.id} className="w-1/6 py-3 px-5 text-left border-r border-b border-green-700 break-words">
                           {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                         </th>
                       ))}
@@ -390,7 +390,7 @@ const UsersTable: React.FC = () => {
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words max-w-sm"
+                          className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
