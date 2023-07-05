@@ -367,7 +367,7 @@ const UsersTable: React.FC = () => {
                 Filter Options
               </button>
             </div>
-            <div className="mx-auto w-85 mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
+            <div className="mx-auto w-75 mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
               <div onScroll={handleScroll} className="overflow-auto h-96">
                 <table className={`min-w-max w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <thead>
