@@ -367,7 +367,7 @@ const UsersTable: React.FC = () => {
                 Filter Options
               </button>
             </div>
-            <div className="mx-auto max-w-4xl mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
+            <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
               <div onScroll={handleScroll} className="overflow-y-auto h-96">
                 <table className={`w-full table-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <thead>
@@ -382,7 +382,7 @@ const UsersTable: React.FC = () => {
                     ))}
                   </thead>
                   <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
-                    {table.getRowModel().rows.slice(0, end).map((row, index) => (
+                    {table.getRowModel().rows.map((row, index) => (
                       <tr
                         key={row.id}
                         className={index % 2 === 0 ? (darkMode ? "bg-gray-800" : "bg-white") : (darkMode ? "bg-gray-700" : "bg-gray-200")}
