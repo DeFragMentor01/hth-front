@@ -16,7 +16,7 @@ type Person = {
   username: string;
   dateofbirth: string;
   gender: string;
-  tribe: string;
+  village: string;  // Changed from tribe to village
   community: string;
   city: string;
   state: string;
@@ -28,7 +28,7 @@ type Person = {
 const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
   const [page, setPage] = useState(1);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [convertedData, setConvertedData] = useState<Person[]>([]);
   const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -38,14 +38,21 @@ const UsersTable: React.FC = () => {
   const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [pageSize, setPageSize] = useState(10000); // Dynamic page size
+  const [pageSize, setPageSize] = useState(100); // Dynamic page size
 
   const [end, setEnd] = useState(pageSize);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const fetchUrl = new URL(`${process.env.REACT_APP_BASE_URL}/users`);
+    fetchUrl.searchParams.append('page', String(page));
+    fetchUrl.searchParams.append('pageSize', String(pageSize));
+    Object.entries(filterValues).forEach(([key, value]) => {
+      fetchUrl.searchParams.append(`filters[${key}]`, JSON.stringify(value));
+    });
+
     axios
-      .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}&pageSize=${pageSize}`) // Pass the pageSize parameter in the API request
+      .get(fetchUrl.toString())
       .then((response) => {
         const { data } = response;
         const converted = data.users.map((person: Person) => ({
@@ -58,24 +65,6 @@ const UsersTable: React.FC = () => {
         setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
         setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
 
-        const options: { [key: string]: string[] } = {};
-        if (data.users.length > 0) {
-          Object.keys(data.users[0]).forEach((key) => {
-            if (
-              key === "age" ||
-              key === "village" ||
-              key === "city" ||
-              key === "community" ||
-              key === "state" ||
-              key === "country"
-            ) {
-              options[key] = uniq(data.users.map((item: Person) => item[key]));
-            }
-          });
-          setFilterOptions(options);
-        }
-        
-        // Increase the page size after every additional 100 user data has been loaded
         if (data.users.length === pageSize) {
           setPageSize((prevPageSize) => prevPageSize + 100);
         }
@@ -83,7 +72,24 @@ const UsersTable: React.FC = () => {
       .catch((error) => {
         console.error("Error fetching data:", error);
       });
-  }, [page, pageSize]); // Add pageSize dependency
+  }, [page, pageSize, filterValues]);
+
+  useEffect(() => {
+    const fetchUrl = new URL(`${process.env.REACT_APP_BASE_URL}/users/filters`);
+    Object.entries(filterValues).forEach(([key, value]) => {
+      fetchUrl.searchParams.append(`filters[${key}]`, JSON.stringify(value));
+    });
+
+    axios
+      .get(fetchUrl.toString())
+      .then((response) => {
+        const { data } = response;
+        setFilterOptions(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching filter options:", error);
+      });
+  }, [filterValues]);
 
   const table = useReactTable({
     data: filteredData,
@@ -93,125 +99,94 @@ const UsersTable: React.FC = () => {
       return [
         columnHelper.accessor("firstname", {
           cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>First Name</span>,
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("lastname", {
           cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Last Name</span>,
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("username", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          header: () => <span>Username</span>,
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("age", {
-          header: () => <span>Age</span>,
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("gender", {
-          header: () => "Gender",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
-        columnHelper.accessor("village", {
-          header: () => "Village",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+        columnHelper.accessor("village", { // Changed from tribe to village
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("community", {
-          header: () => "District",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("city", {
-          header: () => "City",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("state", {
-          header: () => "Province",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("country", {
-          header: () => "Country",
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          cell: (info) => info.getValue(),
           footer: (info) => info.column.id,
         }),
       ];
     }, []),
-    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
   });
 
-  const capitalizeFirstLetter = (string: string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
-  };
+  const filterData = () => {
+    let filtered = convertedData.filter((data) => {
+      if (
+        filterValues.age &&
+        filterValues.age.length > 0 &&
+        !filterValues.age.includes(String(data.age))
+      ) {
+        return false;
+      }
+      if (
+        filterValues.village &&
+        filterValues.village.length > 0 &&
+        !filterValues.village.includes(data.village)
+      ) {
+        return false;
+      }
+      if (
+        filterValues.city &&
+        filterValues.city.length > 0 &&
+        !filterValues.city.includes(data.city)
+      ) {
+        return false;
+      }
+      if (
+        filterValues.community &&
+        filterValues.community.length > 0 &&
+        !filterValues.community.includes(data.community)
+      ) {
+        return false;
+      }
+      if (
+        filterValues.state &&
+        filterValues.state.length > 0 &&
+        !filterValues.state.includes(data.state)
+      ) {
+        return false;
+      }
+      if (
+        filterValues.country &&
+        filterValues.country.length > 0 &&
+        !filterValues.country.includes(data.country)
+      ) {
+        return false;
+      }
+      return true;
+    });
 
-  const calculateAge = (birthDate: Date): number => {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-    return age;
+    setFilteredData(filtered);
+    setFilteredUsers(filtered.length);
   };
-
-  const applyFilters = useCallback(() => {
-    if (convertedData.length > 0) {
-      const newFilteredData = convertedData.filter((data) => {
-        if (
-          filterValues.age &&
-          filterValues.age.length > 0 &&
-          data.age !== parseInt(filterValues.age[0])
-        ) {
-          return false;
-        }
-        if (
-          filterValues.village &&
-          filterValues.village.length > 0 &&
-          !filterValues.village.includes(data.village.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.city &&
-          filterValues.city.length > 0 &&
-          !filterValues.city.includes(data.city.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.community &&
-          filterValues.community.length > 0 &&
-          !filterValues.community.includes(data.community.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.state &&
-          filterValues.state.length > 0 &&
-          !filterValues.state.includes(data.state.toString())
-        ) {
-          return false;
-        }
-        if (
-          filterValues.country &&
-          filterValues.country.length > 0 &&
-          !filterValues.country.includes(data.country.toString())
-        ) {
-          return false;
-        }
-        return true;
-      });
-      setFilteredData(newFilteredData);
-    }
-  }, [convertedData, filterValues]);
 
   const handleFilterChange = useCallback(
     (column: string, value: string, { checked }: { checked: boolean }) => {
@@ -231,14 +206,6 @@ const UsersTable: React.FC = () => {
     []
   );
 
-  const handleSidebarToggle = () => {
-    setIsSidebarOpen((prevIsSidebarOpen) => !prevIsSidebarOpen);
-  };
-
-  const handleSidebarClose = () => {
-    setIsSidebarOpen(false);
-  };
-
   const handleFilterReset = () => {
     setFilterValues({});
     setFilteredData(convertedData); // Reset the filtered data to all users
@@ -254,14 +221,14 @@ const UsersTable: React.FC = () => {
   };
 
   useEffect(() => {
-    applyFilters();
-  }, [applyFilters, filterValues]);
+    filterData();
+  }, [filterValues]);
 
   useEffect(() => {
     setFilteredUsers(filteredData.length);
   }, [filteredData]);
 
-    // The function to open the modal
+  // The function to open the modal
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -271,115 +238,10 @@ const UsersTable: React.FC = () => {
     setIsModalOpen(false);
   };
 
-return (
-  <>
-    <NavBar />
-    <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
-      {isModalOpen && (
-        <div
-          className="fixed z-10 inset-0 overflow-y-auto"
-          aria-labelledby="modal-title"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeModal}></div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div
-              className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}
-            >
-              <div className="p-4">
-                <h2 className="text-xl font-bold mb-4">Filter Options</h2>
-                {Object.keys(filterOptions).map((column) => (
-                  <details key={column} className="mb-4">
-                    <summary className="font-semibold mb-2">
-                      {column === "dateofbirth" ? "Age" : capitalizeFirstLetter(column)}
-                    </summary>
-                    {column === "dateofbirth" ? (
-                      <>
-                        <div className="flex items-center mb-2">
-                          <input
-                            type="radio"
-                            name="ageFilterType"
-                            checked={filterValues.age !== undefined}
-                            onChange={() => handleFilterChange("age", "specific", { checked: true })}
-                            className="mr-2"
-                          />
-                          <label>Specific Age</label>
-                        </div>
-                        <div className="flex items-center mb-2">
-                          <input
-                            type="radio"
-                            name="ageFilterType"
-                            checked={filterValues.age === undefined}
-                            onChange={() => handleFilterChange("age", "range", { checked: true })}
-                            className="mr-2"
-                          />
-                          <label>Age Range</label>
-                        </div>
-                        {filterValues.age !== undefined && (
-                          <div>
-                            <input
-                              type="text"
-                              placeholder="Enter Age"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
-                              className="border rounded-lg px-2 py-1"
-                            />
-                          </div>
-                        )}
-                        {filterValues.age === undefined && (
-                          <div className="flex">
-                            <input
-                              type="text"
-                              placeholder="Min"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
-                              className="border rounded-l-lg px-2 py-1 mr-0.5 w-16"
-                            />
-                            <span className="text-gray-600">-</span>
-                            <input
-                              type="text"
-                              placeholder="Max"
-                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
-                              className="border rounded-r-lg px-2 py-1 ml-0.5 w-16"
-                            />
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      filterOptions[column].map((option) => (
-                        <div key={option} className="flex items-center mb-2">
-                          <input
-                            type="checkbox"
-                            checked={filterValues[column]?.includes(option) || false}
-                            onChange={(e) => handleFilterChange(column, option, { checked: e.target.checked })}
-                            className="mr-2"
-                          />
-                          <label>{option}</label>
-                        </div>
-                      ))
-                    )}
-                  </details>
-                ))}
-                <div className="flex justify-between">
-                  <button
-                    onClick={handleFilterReset}
-                    className="px-3 py-1 border border-green-700 rounded-lg bg-green-700 text-white font-semibold focus:outline-none"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={closeModal}
-                    className="px-3 py-1 border border-green-700 rounded-lg bg-green-700 text-white font-semibold focus:outline-none"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="flex-1 px-8 py-12">
+ return (
+    <>
+      <NavBar />
+      <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
           <button
@@ -442,9 +304,8 @@ return (
           </p>
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
 };
 
 export default UsersTable;
