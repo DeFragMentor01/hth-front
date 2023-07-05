@@ -275,12 +275,6 @@ return (
   <>
     <NavBar />
     <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
-      <button
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        onClick={openModal}
-      >
-        Filter Options
-      </button>
       {isModalOpen && (
         <div
           className="fixed z-10 inset-0 overflow-y-auto"
@@ -389,7 +383,7 @@ return (
         <div className="flex items-center justify-between">
           <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
           <button
-            onClick={handleSidebarToggle}
+            onClick={isModalOpen ? closeModal : openModal}
             className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
           >
             <FaFilter className="inline-block mr-2" />
