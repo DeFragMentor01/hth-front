@@ -80,7 +80,7 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
           ...converted,
         ]);
 
-        const options: FilterOptions = {};
+       const options: FilterOptions = {};
 if (data.users.length > 0) {
   Object.keys(data.users[0]).forEach((key) => {
     if (
@@ -91,7 +91,7 @@ if (data.users.length > 0) {
       key === "state" ||
       key === "country"
     ) {
-      options[key] = uniq<string>(data.users.map((item) => item[key]));
+      options[key] = uniq<string>(data.users.map((item) => item[key])) as string[];
     }
   });
   setCountries(options);
