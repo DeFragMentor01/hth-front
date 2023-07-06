@@ -42,11 +42,11 @@ const UsersTable = () => {
       ) // Pass the pageSize parameter in the API request
       .then((response) => {
         const { data } = response;
-        const converted = data.users.map((person) => ({
-          ...person,
-          age: calculateAge(new Date(person.dateofbirth)),
-        }));
-
+        const converted = data.users.map((person: Person) => ({
+  ...person,
+  age: calculateAge(new Date(person.dateofbirth)),
+}));
+        
         setData((prevData) => [...prevData, ...converted]);
         setTotalUsers(data.total);
         setConvertedData((prevConvertedData) => [
