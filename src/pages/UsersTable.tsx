@@ -140,7 +140,7 @@ const capitalizeFirstLetter = (string: string) => {
   }, []);
 
   // Handle functions for the modal
-  const handleCountryChange = (event) => {
+  const handleCountryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedCountry = event.target.value;
     setSelectedCountry(selectedCountry);
     setSelectedState("");
@@ -157,7 +157,7 @@ const capitalizeFirstLetter = (string: string) => {
       });
   };
 
-  const handleStateChange = (event) => {
+  const handleStateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedState = event.target.value;
     setSelectedState(selectedState);
     setSelectedCity("");
@@ -173,12 +173,12 @@ const capitalizeFirstLetter = (string: string) => {
       });
   };
 
-  const handleCityChange = (event) => {
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>)=> {
     const selectedCity = event.target.value;
     setSelectedCity(selectedCity);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: React.ChangeEvent<HTMLSelectElement>) => {
     event.preventDefault();
     // Make a request to fetch filtered user data based on the selected filters
     axios
