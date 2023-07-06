@@ -12,6 +12,19 @@ import {
 } from "@tanstack/react-table";
 import NavBar from "../components/NavBar";
 
+interface Person {
+  firstname: string;
+  lastname: string;
+  age: number;
+  gender: string;
+  village: string;
+  community: string;
+  city: string;
+  state: string;
+  country: string;
+  dateofbirth: string;
+}
+
 const UsersTable = () => {
   const [data, setData] = useState([]);
   const [page, setPage] = useState(1);
