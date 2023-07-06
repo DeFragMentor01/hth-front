@@ -85,7 +85,7 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
 if (data.users.length > 0) {
   Object.keys(data.users[0]).forEach((key) => {
     if (key === "age") {
-      options[key] = uniq<number>(data.users.map((item) => item[key])) as number[];
+      options[key] = uniq<number>(data.users.map((item: Person) => item[key])) as number[];
     } else if (
       key === "village" ||
       key === "city" ||
@@ -93,7 +93,7 @@ if (data.users.length > 0) {
       key === "state" ||
       key === "country"
     ) {
-      options[key] = uniq<string>(data.users.map((item) => item[key])) as string[];
+      options[key] = uniq<string>(data.users.map((item: Person) => item[key])) as string[];
     }
   });
   setCountries(options);
