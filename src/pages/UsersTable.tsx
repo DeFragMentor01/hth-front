@@ -81,22 +81,22 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
         ]);
 
         const options: FilterOptions = {};
-        if (data.users.length > 0) {
-          Object.keys(data.users[0]).forEach((key) => {
-            if (
-              key === "age" ||
-              key === "village" ||
-              key === "city" ||
-              key === "community" ||
-              key === "state" ||
-              key === "country"
-            ) {
-              options[key] = uniq(data.users.map((item) => item[key]));
-            }
-          });
-          setCountries(options);
-        }
-
+if (data.users.length > 0) {
+  Object.keys(data.users[0]).forEach((key) => {
+    if (
+      key === "age" ||
+      key === "village" ||
+      key === "city" ||
+      key === "community" ||
+      key === "state" ||
+      key === "country"
+    ) {
+      options[key] = uniq<string>(data.users.map((item) => item[key]));
+    }
+  });
+  setCountries(options);
+}
+        
         // Increase the page size after every additional 100 user data has been loaded
         if (data.users.length === pageSize) {
           setPageSize((prevPageSize) => prevPageSize + 100);
