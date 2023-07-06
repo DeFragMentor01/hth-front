@@ -26,10 +26,10 @@ interface Person {
 }
 
 const UsersTable = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<Person[]>([]);
+const [convertedData, setConvertedData] = useState<Person[]>([]);
+const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [page, setPage] = useState(1);
-  const [convertedData, setConvertedData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState(0);
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
