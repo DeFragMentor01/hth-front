@@ -113,7 +113,7 @@ const capitalizeFirstLetter = (string: string) => {
   return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
 };
 
-  const calculateAge = (string: birthDate) => {
+  const calculateAge = (birthDate: Date) => {
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
