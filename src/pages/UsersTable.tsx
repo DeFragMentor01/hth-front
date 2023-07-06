@@ -12,6 +12,15 @@ import {
 } from "@tanstack/react-table";
 import NavBar from "../components/NavBar";
 
+interface FilterOptions {
+  state?: string[];
+  age?: number[];
+  village?: string[];
+  community?: string[];
+  city?: string[];
+  country?: string[];
+};
+
 interface Person {
   firstname: string;
   lastname: string;
@@ -71,7 +80,7 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
           ...converted,
         ]);
 
-        const options = {};
+        const options: FilterOptions = {};
         if (data.users.length > 0) {
           Object.keys(data.users[0]).forEach((key) => {
             if (
