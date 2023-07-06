@@ -50,7 +50,7 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
 
   // States for the modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [countries, setCountries] = useState([]);
+  const [countries, setCountries] = useState<Partial<FilterOptions>>({});
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("");
