@@ -109,9 +109,9 @@ if (data.users.length > 0) {
       });
   }, [page, pageSize]); // Add pageSize dependency
 
-  const capitalizeFirstLetter = (string) => {
-    return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
-  };
+const capitalizeFirstLetter = (string: string) => {
+  return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
+};
 
   const calculateAge = (birthDate) => {
     const today = new Date();
