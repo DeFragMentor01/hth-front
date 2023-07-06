@@ -80,11 +80,13 @@ const [filteredData, setFilteredData] = useState<Person[]>([]);
           ...converted,
         ]);
 
-       const options: FilterOptions = {};
+      const options: Partial<FilterOptions> = {};
+
 if (data.users.length > 0) {
   Object.keys(data.users[0]).forEach((key) => {
-    if (
-      key === "age" ||
+    if (key === "age") {
+      options[key] = uniq<number>(data.users.map((item) => item[key])) as number[];
+    } else if (
       key === "village" ||
       key === "city" ||
       key === "community" ||
