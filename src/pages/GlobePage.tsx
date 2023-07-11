@@ -41,7 +41,9 @@ interface TribeInfo {
   community: string;
 }
 
-interface Community extends CommunityData {}
+interface Community extends CommunityData {
+  population?: number;
+}
 
 interface GlobePageProps {}
 
