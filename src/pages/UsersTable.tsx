@@ -1,9 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
-import { useRecoilState } from "recoil";
-import { darkModeAtom } from "../atoms";
-import { FaFilter } from "react-icons/fa";
-import { uniq } from "lodash";
 import {
   createColumnHelper,
   flexRender,
@@ -11,93 +7,73 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import NavBar from "../components/NavBar";
+import { useRecoilState } from "recoil";
+import { darkModeAtom } from "../atoms";
+import { uniq } from "lodash";
+import { FaFilter } from "react-icons/fa";
 
-interface FilterOptions {
-  state?: string[];
-  age?: number[];
-  village?: string[];
-  community?: string[];
-  city?: string[];
-  country?: string[];
-};
-
-interface Person {
-  firstname: string;
-  lastname: string;
-  age: number;
+type Person = {
+  username: string;
+  dateofbirth: string;
   gender: string;
-  village: string;
+  tribe: string;
   community: string;
   city: string;
   state: string;
   country: string;
-  dateofbirth: string;
-}
+  age: number;
+  [key: string]: string | number;
+};
 
-const UsersTable = () => {
+const UsersTable: React.FC = () => {
   const [data, setData] = useState<Person[]>([]);
-const [convertedData, setConvertedData] = useState<Person[]>([]);
-const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [page, setPage] = useState(1);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+  const [convertedData, setConvertedData] = useState<Person[]>([]);
+  const [filteredData, setFilteredData] = useState<Person[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState(0);
+  const [selectedColumns, setSelectedColumns] = useState<{ [key: string]: boolean }>({});
+  const [filterValues, setFilterValues] = useState<{ [key: string]: string[] }>({});
+  const [filterOptions, setFilterOptions] = useState<{ [key: string]: string[] }>({});
   const [darkMode, setDarkMode] = useRecoilState(darkModeAtom);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [pageSize, setPageSize] = useState(100); // Dynamic page size
+  const [pageSize, setPageSize] = useState(10000); // Dynamic page size
 
   const [end, setEnd] = useState(pageSize);
-  const tableContainerRef = useRef(null);
-
-  // States for the modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [countries, setCountries] = useState<Partial<FilterOptions>>({});
-  const [states, setStates] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState("");
-  const [selectedState, setSelectedState] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     axios
-      .get(
-        `${process.env.REACT_APP_BASE_URL}/users?page=${page}&pageSize=${pageSize}`
-      ) // Pass the pageSize parameter in the API request
+      .get(`${process.env.REACT_APP_BASE_URL}/users?page=${page}&pageSize=${pageSize}`) // Pass the pageSize parameter in the API request
       .then((response) => {
         const { data } = response;
         const converted = data.users.map((person: Person) => ({
-  ...person,
-  age: calculateAge(new Date(person.dateofbirth)),
-}));
-        
+          ...person,
+          age: calculateAge(new Date(person.dateofbirth)),
+        }));
+
         setData((prevData) => [...prevData, ...converted]);
         setTotalUsers(data.total);
-        setConvertedData((prevConvertedData) => [
-          ...prevConvertedData,
-          ...converted,
-        ]);
-        setFilteredData((prevFilteredData) => [
-          ...prevFilteredData,
-          ...converted,
-        ]);
+        setConvertedData((prevConvertedData) => [...prevConvertedData, ...converted]);
+        setFilteredData((prevFilteredData) => [...prevFilteredData, ...converted]);
 
-      const options: Partial<FilterOptions> = {};
-
-if (data.users.length > 0) {
-  Object.keys(data.users[0]).forEach((key) => {
-    if (key === "age") {
-      options[key] = uniq<number>(data.users.map((item: Person) => item[key])) as number[];
-    } else if (
-      key === "village" ||
-      key === "city" ||
-      key === "community" ||
-      key === "state" ||
-      key === "country"
-    ) {
-      options[key] = uniq<string>(data.users.map((item: Person) => item[key])) as string[];
-    }
-  });
-  setCountries(options);
-}
+        const options: { [key: string]: string[] } = {};
+        if (data.users.length > 0) {
+          Object.keys(data.users[0]).forEach((key) => {
+            if (
+              key === "age" ||
+              key === "village" ||
+              key === "city" ||
+              key === "community" ||
+              key === "state" ||
+              key === "country"
+            ) {
+              options[key] = uniq(data.users.map((item: Person) => item[key]));
+            }
+          });
+          setFilterOptions(options);
+        }
         
         // Increase the page size after every additional 100 user data has been loaded
         if (data.users.length === pageSize) {
@@ -109,11 +85,71 @@ if (data.users.length > 0) {
       });
   }, [page, pageSize]); // Add pageSize dependency
 
-const capitalizeFirstLetter = (string: string) => {
-  return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
-};
+  const table = useReactTable({
+    data: filteredData,
+    columns: useMemo(() => {
+      const columnHelper = createColumnHelper<Person>();
 
-  const calculateAge = (birthDate: Date) => {
+      return [
+        columnHelper.accessor("firstname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>First Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("lastname", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Last Name</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("username", {
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          header: () => <span>Username</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("age", {
+          header: () => <span>Age</span>,
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("gender", {
+          header: () => "Gender",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("village", {
+          header: () => "Village",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("community", {
+          header: () => "District",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("city", {
+          header: () => "City",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("state", {
+          header: () => "Province",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("country", {
+          header: () => "Country",
+          cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+      ];
+    }, []),
+    getCoreRowModel: useMemo(() => getCoreRowModel(), []),
+  });
+
+  const capitalizeFirstLetter = (string: string) => {
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
+  };
+
+  const calculateAge = (birthDate: Date): number => {
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -126,120 +162,87 @@ const capitalizeFirstLetter = (string: string) => {
     return age;
   };
 
-  // Effects for the modal
-  useEffect(() => {
-    // Fetch initial filter options for countries
-    axios
-      .get("/users/filters")
-      .then((response) => {
-        setCountries(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching filter options:", error);
+  const applyFilters = useCallback(() => {
+    if (convertedData.length > 0) {
+      const newFilteredData = convertedData.filter((data) => {
+        if (
+          filterValues.age &&
+          filterValues.age.length > 0 &&
+          data.age !== parseInt(filterValues.age[0])
+        ) {
+          return false;
+        }
+        if (
+          filterValues.village &&
+          filterValues.village.length > 0 &&
+          !filterValues.village.includes(data.village.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.city &&
+          filterValues.city.length > 0 &&
+          !filterValues.city.includes(data.city.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.community &&
+          filterValues.community.length > 0 &&
+          !filterValues.community.includes(data.community.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.state &&
+          filterValues.state.length > 0 &&
+          !filterValues.state.includes(data.state.toString())
+        ) {
+          return false;
+        }
+        if (
+          filterValues.country &&
+          filterValues.country.length > 0 &&
+          !filterValues.country.includes(data.country.toString())
+        ) {
+          return false;
+        }
+        return true;
       });
-  }, []);
+      setFilteredData(newFilteredData);
+    }
+  }, [convertedData, filterValues]);
 
-  // Handle functions for the modal
-  const handleCountryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCountry = event.target.value;
-    setSelectedCountry(selectedCountry);
-    setSelectedState("");
-    setSelectedCity("");
-
-    // Fetch filter options for states based on the selected country
-    axios
-      .get(`/users/filters?country=${selectedCountry}`)
-      .then((response) => {
-        setStates(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching filter options:", error);
+  const handleFilterChange = useCallback(
+    (column: string, value: string, { checked }: { checked: boolean }) => {
+      setFilterValues((prevFilterValues) => {
+        const newFilterValues = { ...prevFilterValues };
+        newFilterValues[column] = checked
+          ? [...(newFilterValues[column] || []), value]
+          : (newFilterValues[column] || []).filter(
+              (item: string) => item !== value
+            );
+        if (newFilterValues[column].length === 0) {
+          delete newFilterValues[column];
+        }
+        return newFilterValues;
       });
+    },
+    []
+  );
+
+  const handleSidebarToggle = () => {
+    setIsSidebarOpen((prevIsSidebarOpen) => !prevIsSidebarOpen);
   };
 
-  const handleStateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedState = event.target.value;
-    setSelectedState(selectedState);
-    setSelectedCity("");
-
-    // Fetch filter options for cities based on the selected country and state
-    axios
-      .get(`/users/filters?country=${selectedCountry}&state=${selectedState}`)
-      .then((response) => {
-        setCities(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching filter options:", error);
-      });
+  const handleSidebarClose = () => {
+    setIsSidebarOpen(false);
   };
 
-  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>)=> {
-    const selectedCity = event.target.value;
-    setSelectedCity(selectedCity);
+  const handleFilterReset = () => {
+    setFilterValues({});
+    setFilteredData(convertedData); // Reset the filtered data to all users
   };
-
-  const handleSubmit = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    event.preventDefault();
-    // Make a request to fetch filtered user data based on the selected filters
-    axios
-      .get(
-        `/users?country=${selectedCountry}&state=${selectedState}&city=${selectedCity}`
-      )
-      .then((response) => {
-        const filteredData = response.data;
-        // Handle the filtered data, update your UI, etc.
-      })
-      .catch((error) => {
-        console.error("Error fetching filtered user data:", error);
-      });
-    setIsModalOpen(false);
-  };
-
-  const table = useReactTable({
-    data: filteredData,
-    columns: useMemo(() => {
-      const columnHelper = createColumnHelper<Person>();
-
-      return [
-        columnHelper.accessor("firstname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("lastname", {
-          cell: (info) => capitalizeFirstLetter(info.getValue()),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("age", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("gender", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("village", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("community", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("city", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("state", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-        columnHelper.accessor("country", {
-          cell: (info) => info.getValue(),
-          footer: (info) => info.column.id,
-        }),
-      ];
-    }, []),
-  });
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const bottom =
@@ -250,173 +253,198 @@ const capitalizeFirstLetter = (string: string) => {
     }
   };
 
-  return (
-    <>
-      <NavBar />
-      <div
-        className={`flex flex-col min-h-screen ${
-          darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"
-        }`}
-      >
-        <div className="flex flex-row-reverse">
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters, filterValues]);
+
+  useEffect(() => {
+    setFilteredUsers(filteredData.length);
+  }, [filteredData]);
+
+    // The function to open the modal
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  // The function to close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+return (
+  <>
+    <NavBar />
+    <div className={`flex flex-col min-h-screen ${darkMode ? "bg-gray-800 text-green-200" : "bg-gray-100 text-green-700"}`}>
+      {isModalOpen && (
+        <div
+          className="fixed z-10 inset-0 overflow-y-auto"
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={closeModal}></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+              className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}
+            >
+              <div className="p-4">
+                <h2 className="text-xl font-bold mb-4">Filter Options</h2>
+                {Object.keys(filterOptions).map((column) => (
+                  <details key={column} className="mb-4">
+                    <summary className="font-semibold mb-2">
+                      {column === "dateofbirth" ? "Age" : capitalizeFirstLetter(column)}
+                    </summary>
+                    {column === "dateofbirth" ? (
+                      <>
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="radio"
+                            name="ageFilterType"
+                            checked={filterValues.age !== undefined}
+                            onChange={() => handleFilterChange("age", "specific", { checked: true })}
+                            className="mr-2"
+                          />
+                          <label>Specific Age</label>
+                        </div>
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="radio"
+                            name="ageFilterType"
+                            checked={filterValues.age === undefined}
+                            onChange={() => handleFilterChange("age", "range", { checked: true })}
+                            className="mr-2"
+                          />
+                          <label>Age Range</label>
+                        </div>
+                        {filterValues.age !== undefined && (
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Enter Age"
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              className="border rounded-lg px-2 py-1"
+                            />
+                          </div>
+                        )}
+                        {filterValues.age === undefined && (
+                          <div className="flex">
+                            <input
+                              type="text"
+                              placeholder="Min"
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              className="border rounded-l-lg px-2 py-1 mr-0.5 w-16"
+                            />
+                            <span className="text-gray-600">-</span>
+                            <input
+                              type="text"
+                              placeholder="Max"
+                              onChange={(e) => handleFilterChange("age", e.target.value, { checked: true })}
+                              className="border rounded-r-lg px-2 py-1 ml-0.5 w-16"
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      filterOptions[column].map((option) => (
+                        <div key={option} className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            checked={filterValues[column]?.includes(option) || false}
+                            onChange={(e) => handleFilterChange(column, option, { checked: e.target.checked })}
+                            className="mr-2"
+                          />
+                          <label>{option}</label>
+                        </div>
+                      ))
+                    )}
+                  </details>
+                ))}
+                <div className="flex justify-between">
+                  <button
+                    onClick={handleFilterReset}
+                    className="px-3 py-1 border border-green-700 rounded-lg bg-green-700 text-white font-semibold focus:outline-none"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="px-3 py-1 border border-green-700 rounded-lg bg-green-700 text-white font-semibold focus:outline-none"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="flex-1 px-8 py-12">
+        <div className="flex items-center justify-between">
+          <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">People of iTribe</h1>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 mt-4 bg-blue-500 text-white rounded-md"
+            onClick={isModalOpen ? closeModal : openModal}
+            className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${darkMode ? "bg-green-500 text-gray-900" : "bg-green-700 text-white"} font-semibold focus:outline-none`}
           >
-            Open Filters
+            <FaFilter className="inline-block mr-2" />
+            Filter Options
           </button>
         </div>
-        <div className="flex-1 px-8 py-12">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-semibold text-green-700 dark:text-green-200">
-              People of iTribe
-            </h1>
-            <button
-              className={`px-3 py-1 border border-green-700 rounded-lg self-start ml-auto ${
-                darkMode
-                  ? "bg-green-500 text-gray-900"
-                  : "bg-green-700 text-white"
-              } font-semibold focus:outline-none`}
-            >
-              <FaFilter className="inline-block mr-2" />
-              Filter Options
-            </button>
-          </div>
-          <div className="mx-auto max-w-4xl mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
-            <div
-              onScroll={handleScroll}
-              className="overflow-y-auto h-96"
-              ref={tableContainerRef}
-            >
-              <table
-                className={`w-full table-auto ${
-                  darkMode ? "bg-gray-800" : "bg-white"
-                }`}
-              >
-                <thead>
-                  {table.headerGroups.map((headerGroup) => (
-                    <tr
-                      key={headerGroup.id}
-                      className={`${
-                        darkMode
-                          ? "bg-gray-800 text-green-200"
-                          : "bg-green-700 text-white"
-                      } sticky top-0`}
-                    >
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="py-3 px-5 text-left border-r border-b border-green-700"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                columnHelper.accessor(
-                                  header.column.columnDef.header,
-                                  {
-                                    cell: (info) =>
-                                      capitalizeFirstLetter(info.getValue()),
-                                    footer: (info) => info.column.id,
-                                  }
-                                ),
-                                header.getContext()
-                              )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody
-                  className={darkMode ? "text-green-300" : "text-green-700"}
-                >
-                  {table.rowModel.rows.slice(0, end).map((row, index) => (
-                    <tr
-                      key={row.id}
-                      className={
-                        index % 2 === 0
-                          ? darkMode
-                            ? "bg-gray-800"
-                            : "bg-white"
-                          : darkMode
-                          ? "bg-gray-700"
-                          : "bg-gray-200"
-                      }
-                    >
-                      {row.visibleCells.map((cell) => (
-                        <td
-                          key={cell.id}
-                          className="py-3 px-6 text-left whitespace-nowrap border-r border-b border-green-700"
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p
-              className={`text-2xl text-green-300 ${
-                darkMode ? "dark:text-green-200" : ""
-              }`}
-            >
-              Displaying {filteredUsers} of {totalUsers} users.
-            </p>
-          </div>
-        </div>
-        {isModalOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-            <div className="bg-white p-5 rounded-lg">
-              <h2 className="text-2xl mb-4">Filters</h2>
-              <form onSubmit={handleSubmit}>
-                <label>
-                  Country:
-                  <select
-                    value={selectedCountry}
-                    onChange={handleCountryChange}
+        <div className="mx-auto w-full mt-4 bg-gray-700 dark:bg-gray-700 shadow-lg rounded-lg overflow-hidden p-5">
+          <div onScroll={handleScroll} className="overflow-auto h-96">
+            <table className={`table-fixed ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+              <thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr
+                    key={headerGroup.id}
+                    className={`${darkMode ? "bg-gray-800 text-green-200" : "bg-green-700 text-white"} sticky top-0`}
                   >
-                    <option value="">Select a country</option>
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="w-1/6 py-3 px-5 text-left border-r border-b border-green-700 break-words"
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
                     ))}
-                  </select>
-                </label>
-                <label>
-                  State:
-                  <select value={selectedState} onChange={handleStateChange}>
-                    <option value="">Select a state</option>
-                    {states.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
+                  </tr>
+                ))}
+              </thead>
+              <tbody className={darkMode ? "text-green-300" : "text-green-700"}>
+                {table.getRowModel().rows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className={
+                      index % 2 === 0
+                        ? darkMode
+                          ? "bg-gray-800"
+                          : "bg-white"
+                        : darkMode
+                        ? "bg-gray-700"
+                        : "bg-gray-200"
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
                     ))}
-                  </select>
-                </label>
-                <label>
-                  City:
-                  <select value={selectedCity} onChange={handleCityChange}>
-                    <option value="">Select a city</option>
-                    {cities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button type="submit">Apply Filters</button>
-              </form>
-              <button onClick={() => setIsModalOpen(false)}>Close</button>
-            </div>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+          <p className={`text-2xl text-green-300 ${darkMode ? "dark:text-green-200" : ""}`}>
+            Displaying {filteredUsers} of {totalUsers} users.
+          </p>
+        </div>
       </div>
-    </>
-  );
+    </div>
+  </>
+);
 };
 
 export default UsersTable;
