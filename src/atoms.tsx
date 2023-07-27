@@ -71,11 +71,55 @@ export const selectedFiltersAtom = atom<Record<string, string | string[]>>({
   default: {},
 });
 
-export const filteredCommunitiesDataAtom = atom<CommunityData[]>({
-  key: 'filteredCommunitiesData',
-  default: [],
+export const districtIdAtom = atom<number | null>({
+  key: 'districtId',
+  default: null,
 });
 
+export const villageIdAtom = atom<number | null>({
+  key: 'villageId',
+  default: null,
+});
+
+export const countryIdAtom = atom<number | null>({
+  key: 'countryId',
+  default: null,
+});
+
+export const provinceIdAtom = atom<number | null>({
+  key: 'provinceId',
+  default: null,
+});
+
+export const locationDataAtom = atom({
+  key: 'locationData', // unique ID (with respect to other atoms/selectors)
+  default: [], // default value (aka initial value)
+});
+
+export const countryNameAtom = atom<string | null>({
+  key: "countryName",
+  default: null,
+});
+
+export const provinceNameAtom = atom<string | null>({
+  key: "provinceName",
+  default: null,
+});
+
+export const districtNameAtom = atom<string | null>({
+  key: "districtName",
+  default: null,
+});
+
+export const isFilterButtonVisibleAtom = atom({
+  key: 'isFilterButtonVisible',
+  default: false,
+});
+
+export const isFilterModalVisibleAtom = atom({
+  key: 'isFilterModalVisible',
+  default: true,
+});
 
 export const memberTypeAtom = atom<'community member' | 'community leader' | null>({
   key: 'memberType',
