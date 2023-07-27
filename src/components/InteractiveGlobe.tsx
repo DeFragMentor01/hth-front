@@ -4,7 +4,6 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useRecoilValue } from "recoil";
 import { locationDataAtom } from "../atoms";
 
-// Define the location data interface
 interface LocationData {
   id: number;
   no: number;
@@ -24,13 +23,12 @@ mapboxgl.accessToken =
   "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
 const InteractiveGlobe: React.FC = () => {
-  // Specify the type when using the recoil value
   const locationData = useRecoilValue<LocationData[]>(locationDataAtom);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!mapContainerRef.current || !locationData.length) return;
-
+    if (!mapContainerRef.current) return;
+  
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/satellite-streets-v12",
@@ -38,13 +36,19 @@ const InteractiveGlobe: React.FC = () => {
       zoom: 1,
       maxBounds: [-180, -90, 180, 90],
     });
+  
+    let bounds: mapboxgl.LngLatBounds | null = null;
 
-    // Define the initial bounds
-    let bounds = new mapboxgl.LngLatBounds();
-
-    // Loop through each item in locationData
+  
     locationData.forEach((location) => {
-      // Create a popup
+      const latitude = parseFloat(location.latitude);
+      const longitude = parseFloat(location.longitude);
+  
+      if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+        console.warn(`Invalid coordinates for location: ${location.name}`);
+        return;
+      }
+  
       const popup = new mapboxgl.Popup({ offset: 25, className: 'popup' })
         .setHTML(`
           <div>
@@ -53,24 +57,28 @@ const InteractiveGlobe: React.FC = () => {
             <p><strong>Population:</strong> ${location.population}</p>
           </div>
         `);
-
-      // Create a marker and add it to the map
+  
       const marker = new mapboxgl.Marker()
-        .setLngLat([parseFloat(location.longitude), parseFloat(location.latitude)])
-        .setPopup(popup) // attach the popup to the marker
+        .setLngLat([longitude, latitude])
+        .setPopup(popup)
         .addTo(map);
-
-      // Extend the bounds to include the marker's position
-      bounds.extend(marker.getLngLat());
+  
+      if (bounds) {
+        bounds.extend(marker.getLngLat());
+      } else {
+        bounds = new mapboxgl.LngLatBounds(marker.getLngLat(), marker.getLngLat());
+      }
     });
-
-    // After all markers have been created, fit the map to the bounds
-    map.fitBounds(bounds, { padding: 50 });
-
+  
+    if (bounds) {
+      map.fitBounds(bounds, { padding: 50 });
+    }
+  
     return () => {
       map.remove();
     };
-}, [locationData]);
+  }, [locationData]);
+  
 
   return (
     <div
