@@ -10,6 +10,7 @@ const DashboardPage: React.FC = () => {
   const darkMode = useRecoilValue(darkModeAtom);
   const [userStats] = useRecoilState(userStatState);
 
+  console.log("Just checking in...")
   return (
     <div className={`flex flex-col items-start ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} min-h-screen`}>
       <div className={`w-full ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>

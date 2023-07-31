@@ -56,6 +56,25 @@ export interface FilterData {
   villages: Record<string, CommunityData[]>;
 }
 
+type FilterStateType = {
+  country: string;
+  state: string;
+  city: string;
+  community: string;
+  village: string;
+  gender: string;
+};
+
+
+const initialFilterState: FilterStateType = {
+  country: '',
+  state: '',
+  city: '',
+  community: '',
+  village: '',
+  gender: '',
+};
+
 export const darkModeAtom = atom<boolean>({
   key: "darkMode",
   default: false,
@@ -109,6 +128,61 @@ export const provinceNameAtom = atom<string | null>({
 export const districtNameAtom = atom<string | null>({
   key: "districtName",
   default: null,
+});
+
+export const filterState = atom<FilterStateType>({
+  key: 'filterState',
+  default: initialFilterState,
+});
+
+export const genderFilterState = atom({
+  key: 'genderFilterState',
+  default: "",
+});
+
+export const specificAgeFilterState = atom<number>({
+  key: "specificAgeFilterState",
+  default: 0,
+});
+
+export const ageRangeFilterState = atom<string>({
+  key: "ageRangeFilterState",
+  default: "",
+});
+
+export const countryFilterState = atom<string>({
+  key: 'countryFilterState',
+  default: '',
+});
+
+export const stateFilterState = atom<string>({
+  key: 'stateFilterState',
+  default: '',
+});
+
+export const cityFilterState = atom<string>({
+  key: 'cityFilterState',
+  default: '',
+});
+
+export const communityFilterState = atom<string>({
+  key: 'communityFilterState',
+  default: '',
+});
+
+export const villageFilterState = atom<string>({
+  key: 'villageFilterState',
+  default: '',
+});
+
+export const filtersAppliedAtom = atom({
+  key: 'filtersAppliedAtom',
+  default: false,
+});
+
+export const totalUsersAtom = atom({
+  key: 'totalUsers', // unique ID (with respect to other atoms/selectors)
+  default: 0, // default value (aka initial value)
 });
 
 export const isFilterButtonVisibleAtom = atom({
