@@ -14,6 +14,7 @@ import {
   genderFilterState,
   specificAgeFilterState, // Add this
   ageRangeFilterState, // Add this
+  verifiedFilterState,
 } from "../atoms";
 import axios from "axios";
 
@@ -26,6 +27,7 @@ type FilterStateType = {
   gender: string;
   specificAge: string; // Add this
   ageRange: string; // Add this
+  verified: string;
 };
 
 // Initialize the filter state.
@@ -38,6 +40,7 @@ const initialFilterState: FilterStateType = {
   gender: "",
   specificAge: "", // Add this
   ageRange: "", // Add this
+  verified: "",
 };
 
 const FilterModal: React.FC = () => {
@@ -52,7 +55,7 @@ const FilterModal: React.FC = () => {
   const [cities, setCities] = useState<string[]>([]);
   const [communities, setCommunities] = useState<string[]>([]);
   const [villages, setVillages] = useState<string[]>([]);
-
+  const [isAfghanistan, setIsAfghanistan] = useState(false);
   // global variables to store user's selection
   const [specificAgeFilter, setSpecificAgeFilter] = useRecoilState(
     specificAgeFilterState
@@ -66,6 +69,8 @@ const FilterModal: React.FC = () => {
   const [communityFilter, setCommunityFilter] =
     useRecoilState(communityFilterState);
   const [villageFilter, setVillageFilter] = useRecoilState(villageFilterState);
+  const [verifiedFilter, setVerifiedFilter] =
+    useRecoilState(verifiedFilterState);
   const [darkMode] = useRecoilState(darkModeAtom);
 
   useEffect(() => {
@@ -113,10 +118,17 @@ const FilterModal: React.FC = () => {
     fetchData();
   }, [tempFilter]);
 
+  useEffect(() => {
+    if (tempFilter.country === "Afghanistan") {
+      setIsAfghanistan(true);
+    } else {
+      setIsAfghanistan(false);
+    }
+  }, [tempFilter.country]);
+
   const handleFilterChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value } = event.target;
-      // Modify the local filter state rather than the global one
       setTempFilter((prevFilter) => {
         const newFilter = { ...prevFilter, [name]: value };
         return newFilter;
@@ -124,7 +136,6 @@ const FilterModal: React.FC = () => {
     },
     []
   );
-  
 
   const closeModal = () => {
     // Ensure at least one filter is set before allowing the modal to close
@@ -157,9 +168,23 @@ const FilterModal: React.FC = () => {
     setGenderFilter(tempFilter.gender);
     setSpecificAgeFilter(Number(tempFilter.specificAge));
     setAgeRangeFilter(tempFilter.ageRange);
+    setVerifiedFilter(tempFilter.verified); // Add this
     setIsOpen(false);
-  }, [tempFilter, setFilter, setFiltersApplied, setCountryFilter, setStateFilter, setCityFilter, setCommunityFilter, setVillageFilter, setGenderFilter, setSpecificAgeFilter, setAgeRangeFilter, setIsOpen]);
-  
+  }, [
+    tempFilter,
+    setFilter,
+    setFiltersApplied,
+    setCountryFilter,
+    setStateFilter,
+    setCityFilter,
+    setCommunityFilter,
+    setVillageFilter,
+    setGenderFilter,
+    setSpecificAgeFilter,
+    setAgeRangeFilter,
+    setVerifiedFilter,
+    setIsOpen,
+  ]);
 
   const resetFilters = useCallback(() => {
     // Also reset the temporary filter state
@@ -216,37 +241,37 @@ const FilterModal: React.FC = () => {
 
               <div className="px-4 py-5 sm:p-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="col-span-2 sm:col-span-1">
-  <label className="block text-sm font-medium text-gray-700">
-    Specific Age
-  </label>
-  <input
-    type="number"
-    name="specificAge"
-    value={tempFilter.specificAge}
-    onChange={handleFilterChange}
-    className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-  />
-</div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Specific Age
+                    </label>
+                    <input
+                      type="number"
+                      name="specificAge"
+                      value={tempFilter.specificAge}
+                      onChange={handleFilterChange}
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                  </div>
 
-<div className="col-span-2 sm:col-span-1">
-  <label className="block text-sm font-medium text-gray-700">
-    Age Range
-  </label>
-  <select
-    name="ageRange"
-    value={tempFilter.ageRange}
-    onChange={handleFilterChange}
-    className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-  >
-    <option value="">Select an Age Range</option>
-    <option value="0-20">0-20</option>
-    <option value="21-40">21-40</option>
-    <option value="41-60">41-60</option>
-    <option value="61-80">61-80</option>
-    <option value="81-100">81-100</option>
-  </select>
-</div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Age Range
+                    </label>
+                    <select
+                      name="ageRange"
+                      value={tempFilter.ageRange}
+                      onChange={handleFilterChange}
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <option value="">Select an Age Range</option>
+                      <option value="0-20">0-20</option>
+                      <option value="21-40">21-40</option>
+                      <option value="41-60">41-60</option>
+                      <option value="61-80">61-80</option>
+                      <option value="81-100">81-100</option>
+                    </select>
+                  </div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Country
@@ -268,7 +293,7 @@ const FilterModal: React.FC = () => {
 
                   <div className="col-span-2 sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700">
-                      State
+                      {isAfghanistan ? "Province" : "State"}
                     </label>
                     <select
                       name="state"
@@ -276,7 +301,9 @@ const FilterModal: React.FC = () => {
                       onChange={handleFilterChange}
                       className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
-                      <option value="">Select a State</option>
+                      <option value="">
+                        {isAfghanistan ? "Select a Province" : "Select a State"}
+                      </option>
                       {states.map((state) => (
                         <option key={state} value={state}>
                           {state}
@@ -285,28 +312,29 @@ const FilterModal: React.FC = () => {
                     </select>
                   </div>
 
+                  {!isAfghanistan && (
+                    <div className="col-span-2 sm:col-span-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        City
+                      </label>
+                      <select
+                        name="city"
+                        value={tempFilter.city}
+                        onChange={handleFilterChange}
+                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      >
+                        <option value="">Select a City</option>
+                        {cities.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="col-span-2 sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700">
-                      City
-                    </label>
-                    <select
-                      name="city"
-                      value={tempFilter.city}
-                      onChange={handleFilterChange}
-                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    >
-                      <option value="">Select a City</option>
-                      {cities.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Community
+                      {isAfghanistan ? "District" : "Community"}
                     </label>
                     <select
                       name="community"
@@ -314,7 +342,7 @@ const FilterModal: React.FC = () => {
                       onChange={handleFilterChange}
                       className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >
-                      <option value="">Select a Community</option>
+                      <option value="">{isAfghanistan ? "Select a District" : "Select a Community"}</option>
                       {communities.map((community) => (
                         <option key={community} value={community}>
                           {community}
@@ -354,6 +382,21 @@ const FilterModal: React.FC = () => {
                       <option value="">Select Gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Verified
+                    </label>
+                    <select
+                      name="verified"
+                      value={tempFilter.verified}
+                      onChange={handleFilterChange}
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <option value="">All</option>
+                      <option value="true">Verified Users</option>
+                      <option value="false">Unverified Users</option>
                     </select>
                   </div>
                 </div>

@@ -150,6 +150,12 @@ export const ageRangeFilterState = atom<string>({
   default: "",
 });
 
+export const verifiedFilterState = atom({
+  key: "verifiedFilterState",
+  default: "",
+});
+
+
 export const countryFilterState = atom<string>({
   key: 'countryFilterState',
   default: '',

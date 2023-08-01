@@ -22,7 +22,8 @@ type Person = {
   state: string;
   country: string;
   age: number;
-  [key: string]: string | number;
+  verified: boolean;
+  [key: string]: string | number | boolean;
 };
 
 const UsersTable: React.FC = () => {
@@ -79,6 +80,11 @@ const UsersTable: React.FC = () => {
       const columnHelper = createColumnHelper<Person>();
 
       return [
+        columnHelper.accessor("#", {
+          header: "#",
+          cell: ({ row: { index } }: { row: { index: number }}) => index + 1,
+          footer: (info) => info.column.id,
+        }),
         columnHelper.accessor("firstname", {
           cell: (info) => capitalizeFirstLetter(info.getValue()),
           header: () => <span>First Name</span>,
@@ -96,7 +102,6 @@ const UsersTable: React.FC = () => {
         }),
         columnHelper.accessor("age", {
           header: () => <span>Age</span>,
-          // cell: (info) => calculateAge(info.getValue()),
           footer: (info) => info.column.id,
         }),
         columnHelper.accessor("gender", {
@@ -127,6 +132,11 @@ const UsersTable: React.FC = () => {
         columnHelper.accessor("country", {
           header: () => "Country",
           cell: (info) => capitalizeFirstLetter(info.getValue()),
+          footer: (info) => info.column.id,
+        }),
+        columnHelper.accessor("verified", {
+          header: () => "Verified Users",
+          cell: (info) => info.getValue() ? "Verified" : "Unverified",
           footer: (info) => info.column.id,
         }),
       ];
@@ -211,10 +221,11 @@ const UsersTable: React.FC = () => {
                         }
                       >
                         {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
-                          >
+                         <td
+                         key={cell.id}
+                         style={cell.column.id === "count" ? { position: "sticky", left: 0 } : {}}
+                         className="w-1/6 py-3 px-6 text-left whitespace-normal border-r border-b border-green-700 break-words"
+                       >
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </td>
                         ))}
