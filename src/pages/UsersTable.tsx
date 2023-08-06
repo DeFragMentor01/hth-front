@@ -33,15 +33,23 @@ const UsersTable: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [filterTotalUsers, setFilterTotalUsers] = useState(0);
+  const [isFilterSet, setIsFilterSet] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPage(1);
     setUsers([]);
+  
+    if (Object.keys(filter).length > 0) {
+      setIsFilterSet(true);
+    } else {
+      setIsFilterSet(false);
+    }
   }, [filter]);
 
   useEffect(() => {
+    if (!isFilterSet) return; 
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
@@ -70,8 +78,11 @@ const UsersTable: React.FC = () => {
       }
     };
   
-    fetchUsers();
-  }, [filter, page]);
+    if(Object.keys(filter).length > 0) {
+      fetchUsers();
+    }
+  }, [filter, page, isFilterSet]);
+  
   
 
   const table = useReactTable({

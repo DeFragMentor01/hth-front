@@ -1,5 +1,36 @@
 import { atom } from "recoil";
 
+
+interface LocationData {
+  id: number;
+  no: number;
+  province: string;
+  district: string;
+  name: string;
+  latitude: string;
+  longitude: string;
+  area_square_meter: string;
+  hectares: string;
+  shape_length: string;
+  population: number;
+  district_id: number;
+}
+
+interface VillageData {
+  id: number;
+  no: number;
+  province: string;
+  district: string;
+  name: string;
+  latitude: string;
+  longitude: string;
+  area_square_meter: string;
+  hectares: string;
+  shape_length: string;
+  population: number;
+  district_id: number;
+}
+
 interface FormData {
   firstname: string;
   lastname: string;
@@ -110,10 +141,26 @@ export const provinceIdAtom = atom<number | null>({
   default: null,
 });
 
-export const locationDataAtom = atom({
-  key: 'locationData', // unique ID (with respect to other atoms/selectors)
-  default: [], // default value (aka initial value)
+export const locationDataAtom = atom<LocationData[]>({
+  key: 'locationData',
+  default: [],
 });
+
+export const villageAtom = atom({
+  key: 'villageAtom', // unique ID
+  default: null, // default value
+});
+
+export const searchedVillageAtom = atom({
+  key: 'searchedVillage',
+  default: undefined,
+});
+
+export const villageNameAtom = atom<string | null>({
+  key: "villageNameAtom",
+  default: null,
+});
+
 
 export const countryNameAtom = atom<string | null>({
   key: "countryName",

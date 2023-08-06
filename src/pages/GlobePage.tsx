@@ -16,6 +16,7 @@ import {
   provinceIdAtom,
   districtIdAtom,
   villageIdAtom,
+  villageAtom
 } from "../atoms";
 
 interface Params {
@@ -34,6 +35,7 @@ const GlobePage: FunctionComponent<GlobePageProps> = () => {
   const selectedProvinceId = useRecoilValue(provinceIdAtom);
   const selectedDistrictId = useRecoilValue(districtIdAtom);
   const selectedVillageId = useRecoilValue(villageIdAtom);
+  const setVillage = useSetRecoilState(villageAtom);
   const setLocationData = useSetRecoilState(locationDataAtom);
   const darkMode = useRecoilValue(darkModeAtom);
 

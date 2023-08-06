@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { MdClose } from "react-icons/md";
-import { useRecoilState } from "recoil";
+import { AiOutlineSearch } from "react-icons/ai";
+import { useRecoilState, useRecoilValue } from "recoil";
 import {
   isFilterModalVisibleAtom,
   isFilterButtonVisibleAtom,
@@ -12,6 +13,8 @@ import {
   countryNameAtom,
   provinceNameAtom,
   districtNameAtom,
+  villageNameAtom,
+  searchedVillageAtom
 } from "../atoms";
 
 type Location = {
@@ -19,7 +22,26 @@ type Location = {
   name: string;
 };
 
+interface LocationData {
+  id: number;
+  no: number;
+  province: string;
+  district: string;
+  name: string;
+  latitude: string;
+  longitude: string;
+  area_square_meter: string;
+  hectares: string;
+  shape_length: string;
+  population: number;
+  district_id: number;
+}
+
 const MapFilters = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedVillageName, setSelectedVillageName] = useRecoilState<string | null>(
+    villageNameAtom
+  );  
   const [countries, setCountries] = useState<Location[]>([]);
   const [provinces, setProvinces] = useState<Location[]>([]);
   const [districts, setDistricts] = useState<Location[]>([]);
@@ -40,6 +62,7 @@ const MapFilters = () => {
   const [isFilterButtonVisible, setIsFilterButtonVisible] = useRecoilState(
     isFilterButtonVisibleAtom
   );
+  const [searchedVillage, setSearchedVillage] = useRecoilState(searchedVillageAtom);
 
   const [selectedCountryId, setSelectedCountryId] = useRecoilState<
     number | null
@@ -69,15 +92,16 @@ const MapFilters = () => {
 
   const getData = async (
     url: string,
-    setData: React.Dispatch<React.SetStateAction<Location[]>>
+    setData: React.Dispatch<React.SetStateAction<Location[]>>,
+    queryParams?: Record<string, any>
   ) => {
     try {
-      const res = await axios.get(url);
+      const res = await axios.get(url, { params: queryParams });
       setData(res.data);
     } catch (error) {
       console.error(`Error fetching data from ${url}:`, error);
     }
-  };
+  };  
 
   useEffect(() => {
     getData(`${process.env.REACT_APP_BASE_URL}/countries`, setCountries);
@@ -116,12 +140,46 @@ const MapFilters = () => {
     }
   }, [tempSelectedDistrictId]);
 
+  const getVillagesBySearchTerm = async (): Promise<boolean> => {
+    try {
+      const res = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/villages/search`,
+        {
+          params: { village_name: searchTerm },
+        }
+      );
+  
+      const village = res.data[0];
+      if (village) {
+        setSearchedVillage(village);
+        setTempSelectedVillageId(village.id);
+        setVillages([village]); // Update villages state
+        setErrorMessage(""); // Clear any error message
+        return true;
+      } else {
+        setTempSelectedVillageId(null);
+        setVillages([]); // Clear villages state
+        return false;
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setErrorMessage(err.response?.data?.message || 'An error occurred');
+      } else {
+        setErrorMessage('An error occurred');
+      }
+      return false;
+    }
+  };  
+
   const handleSelectChange = (
     e: React.ChangeEvent<HTMLSelectElement>,
     setState: React.Dispatch<React.SetStateAction<number | null>>
   ) => {
-    const selectedValue = e.target.value !== "" ? +e.target.value : null;
-    setState(selectedValue);
+    // If search term is empty then we are allowed to update other filters
+    if (!searchTerm) {
+      const selectedValue = e.target.value !== "" ? +e.target.value : null;
+      setState(selectedValue);
+    }
   };
 
   const resetFilters = () => {
@@ -132,30 +190,42 @@ const MapFilters = () => {
   };
 
   const applyFilters = () => {
-    if (
-      !tempSelectedCountryId ||
-      !tempSelectedProvinceId ||
-      !tempSelectedDistrictId
-    ) {
-      setErrorMessage("The first three filters are required");
+    if (searchTerm) {
+      console.log("Fetching villages by search term", searchTerm);
+      getVillagesBySearchTerm().then((villageFound) => {
+        if (villageFound) {
+          setSelectedVillageId(tempSelectedVillageId);
+          setSelectedVillageName(searchTerm);
+
+          // Hide filter modal and show filter button
+          setIsFilterModalVisible(false);
+          setIsFilterButtonVisible(true);
+        } else {
+          setErrorMessage("Village not found");
+        }
+      });
     } else {
       setErrorMessage("");
       setSelectedCountryId(tempSelectedCountryId);
       setSelectedProvinceId(tempSelectedProvinceId);
       setSelectedDistrictId(tempSelectedDistrictId);
       setSelectedVillageId(tempSelectedVillageId);
-
+  
       const selectedCountryName =
         countries.find((c) => c.id === tempSelectedCountryId)?.name || "";
       const selectedProvinceName =
         provinces.find((p) => p.id === tempSelectedProvinceId)?.name || "";
       const selectedDistrictName =
         districts.find((d) => d.id === tempSelectedDistrictId)?.name || "";
-
+      const selectedVillageName =
+        villages.find((v) => v.id === tempSelectedVillageId)?.name || "";
+  
       setSelectedCountryName(selectedCountryName);
       setSelectedProvinceName(selectedProvinceName);
       setSelectedDistrictName(selectedDistrictName);
-
+      // Update village name
+      setSelectedVillageName(selectedVillageName);
+  
       setIsFilterModalVisible(false);
       setIsFilterButtonVisible(true);
     }
@@ -168,15 +238,25 @@ const MapFilters = () => {
 
   return (
     <div className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      <div className="modal-content w-3/4 max-w-2xl p-6 bg-white rounded-lg shadow-lg relative">
-        <MdClose
-          className="absolute right-4 top-4 cursor-pointer"
-          size={24}
-          onClick={closeHandler}
+    <div className="modal-content w-3/4 max-w-2xl p-6 bg-white rounded-lg shadow-lg relative">
+      <MdClose
+        className="absolute right-4 top-4 cursor-pointer"
+        size={24}
+        onClick={closeHandler}
+      />
+      {errorMessage && (
+        <div className="text-red-500 mb-4">{errorMessage}</div>
+      )}
+      <div className="flex items-center justify-between w-full max-w-md p-2 mb-4 mx-auto bg-white rounded-full shadow-md">
+        <AiOutlineSearch className="text-gray-400" />
+        <input
+           type="text"
+           placeholder="Find a village"
+           className="w-full px-2 py-1 outline-none"
+           value={searchTerm}
+           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        {errorMessage && (
-          <div className="text-red-500 mb-4">{errorMessage}</div>
-        )}
+      </div>
         <div className="mb-8">
           <label
             className="block text-gray-700 text-sm font-bold mb-4"

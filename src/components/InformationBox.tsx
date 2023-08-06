@@ -13,49 +13,65 @@ const InformationBox: FunctionComponent = () => {
   const [provinceVillageCount, setProvinceVillageCount] = useState<number | null>(null);
   const [districtVillageCount, setDistrictVillageCount] = useState<number | null>(null);
 
+  const [countryUserCounts, setCountryUserCounts] = useState({ verifiedCount: 0, nonVerifiedCount: 0 });
+  const [provinceUserCounts, setProvinceUserCounts] = useState({ verifiedCount: 0, nonVerifiedCount: 0 });
+  const [districtUserCounts, setDistrictUserCounts] = useState({ verifiedCount: 0, nonVerifiedCount: 0 });
+
   const countryName = useRecoilValue(countryNameAtom);
   const provinceName = useRecoilValue(provinceNameAtom);
   const districtName = useRecoilValue(districtNameAtom);
 
   useEffect(() => {
-    if (countryId) {
-      axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/country/${countryId}`)
-        .then(response => {
-          console.log('Country data:', response.data);
-          setCountryVillageCount(response.data.count)
-        });
-    }
-
-    if (provinceId) {
-      axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/province/${provinceId}`)
-        .then(response => {
-          console.log('Province data:', response.data);
-          setProvinceVillageCount(response.data.count)
-        });
-    }
-
-    if (districtId) {
-      axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/district/${districtId}`)
-        .then(response => {
-          console.log('District data:', response.data);
-          setDistrictVillageCount(response.data.count)
-        });
-    }
+    const fetchCounts = async (locationType: 'country' | 'province' | 'district', userType: 'country' | 'state' | 'community', name: string | null, id: number | null) => {
+      if (name && id) {
+        const villageResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/${locationType}/${id}`);
+        const userResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/verified/count`, { params: { [userType]: name } });
+  
+        switch(locationType) {
+          case 'country':
+            setCountryVillageCount(villageResponse.data.count);
+            setCountryUserCounts(userResponse.data);
+            break;
+          case 'province':
+            setProvinceVillageCount(villageResponse.data.count);
+            setProvinceUserCounts(userResponse.data);
+            break;
+          case 'district':
+            setDistrictVillageCount(villageResponse.data.count);
+            setDistrictUserCounts(userResponse.data);
+            break;
+          default:
+            break;
+        }
+      }
+    };
+  
+    fetchCounts('country', 'country', countryName, countryId);
+    fetchCounts('province', 'state', provinceName, provinceId);
+    fetchCounts('district', 'community', districtName, districtId);
   }, [countryId, provinceId, districtId]);
+  
+  
 
   return (
-    <div className={`bg-white p-6 rounded-lg shadow-md ${darkMode ? 'text-green-500' : 'text-black'} divide-y divide-gray-200`}>
-    <div className="py-4">
-        <h2 className="text-2xl font-bold">Country: {countryName}</h2>
-        <p className="text-lg">Villages: {countryVillageCount}</p>
+    <div className={`bg-white p-6 rounded-lg shadow-lg ${darkMode ? 'text-green-500' : 'text-black'} divide-y divide-gray-300`}>
+    <div className="py-4 space-y-2">
+        <h2 className="text-2xl font-semibold tracking-wide">Country: {countryName}</h2>
+        <p className="text-lg">Villages: <span className="font-medium">{countryVillageCount}</span></p>
+        <p className="text-lg">Verified users: <span className="font-medium">{countryUserCounts.verifiedCount}</span></p>
+        <p className="text-lg">Non-verified users: <span className="font-medium">{countryUserCounts.nonVerifiedCount}</span></p>
     </div>
-    <div className="py-4">
-        <h2 className="text-2xl font-bold">Province: {provinceName}</h2>
-        <p className="text-lg">Villages: {provinceVillageCount}</p>
+    <div className="py-4 space-y-2">
+        <h2 className="text-2xl font-semibold tracking-wide">Province: {provinceName}</h2>
+        <p className="text-lg">Villages: <span className="font-medium">{provinceVillageCount}</span></p>
+        <p className="text-lg">Verified Users: <span className="font-medium">{provinceUserCounts.verifiedCount}</span></p>
+        <p className="text-lg">Non-Verified Users: <span className="font-medium">{provinceUserCounts.nonVerifiedCount}</span></p>
     </div>
-    <div className="py-4">
-        <h2 className="text-2xl font-bold">District: {districtName}</h2>
-        <p className="text-lg">Villages: {districtVillageCount}</p>
+    <div className="py-4 space-y-2">
+        <h2 className="text-2xl font-semibold tracking-wide">District: {districtName}</h2>
+        <p className="text-lg">Villages: <span className="font-medium">{districtVillageCount}</span></p>
+        <p className="text-lg">Verified Users: <span className="font-medium">{districtUserCounts.verifiedCount}</span></p>
+        <p className="text-lg">Non-Verified Users: <span className="font-medium">{districtUserCounts.nonVerifiedCount}</span></p>
     </div>
 </div>
   );

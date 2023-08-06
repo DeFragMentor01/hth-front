@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FaTimes, FaFilter } from "react-icons/fa";
+import { FaTimes, FaFilter, FaTimesCircle } from "react-icons/fa";
 import { useRecoilState } from "recoil";
 import {
   filterState,
@@ -19,26 +19,28 @@ import {
 import axios from "axios";
 
 type FilterStateType = {
+    search: string;
   country: string;
   state: string;
   city: string;
   community: string;
   village: string;
   gender: string;
-  specificAge: string; // Add this
+  specificAge: number; // Add this
   ageRange: string; // Add this
   verified: string;
 };
 
 // Initialize the filter state.
 const initialFilterState: FilterStateType = {
+    search: "",
   country: "",
   state: "",
   city: "",
   community: "",
   village: "",
   gender: "",
-  specificAge: "", // Add this
+  specificAge: 0, // Add this
   ageRange: "", // Add this
   verified: "",
 };
@@ -46,6 +48,7 @@ const initialFilterState: FilterStateType = {
 const FilterModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [filter, setFilter] = useRecoilState(filterState);
+  const [showAlert, setShowAlert] = useState(false);
   const [tempFilter, setTempFilter] =
     useState<FilterStateType>(initialFilterState);
   const [filtersApplied, setFiltersApplied] =
@@ -138,40 +141,75 @@ const FilterModal: React.FC = () => {
   );
 
   const closeModal = () => {
-    // Ensure at least one filter is set before allowing the modal to close
-    if (
-      filter.country ||
-      filter.state ||
-      filter.city ||
-      filter.community ||
-      filter.village
-    ) {
+    // Check if any filters are selected
+    const isFilterSelected = 
+      tempFilter.country || 
+      tempFilter.state ||
+      tempFilter.city ||
+      tempFilter.community ||
+      tempFilter.village || 
+      tempFilter.gender ||
+      tempFilter.specificAge || 
+      tempFilter.ageRange ||
+      tempFilter.verified;
+
+      if(!isFilterSelected) {
+        setShowAlert(true);
+        return; 
+      }
       setIsOpen(false);
-    } else {
-      alert("Please set at least one filter before closing.");
-    }
-  };
+    };
 
   const openModal = () => {
     setIsOpen(true);
   };
 
   const applyFilters = useCallback(() => {
-    // Update the global filter state when applying filters
+
+    // Check if any filters are selected
+    const isFilterSelected = 
+      tempFilter.country || 
+      tempFilter.state ||
+      tempFilter.city ||
+      tempFilter.community ||
+      tempFilter.village ||
+      tempFilter.gender || 
+      tempFilter.specificAge ||
+      tempFilter.ageRange ||
+      tempFilter.verified;
+  
+    if(!isFilterSelected) {
+      setShowAlert(true);
+      return;
+    }
+  
+    // Apply filters if any selected
     setFilter(tempFilter);
+  
     setFiltersApplied(true);
+  
     setCountryFilter(tempFilter.country);
+  
     setStateFilter(tempFilter.state);
+  
     setCityFilter(tempFilter.city);
+  
     setCommunityFilter(tempFilter.community);
+  
     setVillageFilter(tempFilter.village);
+  
     setGenderFilter(tempFilter.gender);
+  
     setSpecificAgeFilter(Number(tempFilter.specificAge));
+  
     setAgeRangeFilter(tempFilter.ageRange);
-    setVerifiedFilter(tempFilter.verified); // Add this
+  
+    setVerifiedFilter(tempFilter.verified);
+  
     setIsOpen(false);
+  
   }, [
-    tempFilter,
+    tempFilter, 
     setFilter,
     setFiltersApplied,
     setCountryFilter,
@@ -183,7 +221,7 @@ const FilterModal: React.FC = () => {
     setSpecificAgeFilter,
     setAgeRangeFilter,
     setVerifiedFilter,
-    setIsOpen,
+    setIsOpen
   ]);
 
   const resetFilters = useCallback(() => {
@@ -222,6 +260,7 @@ const FilterModal: React.FC = () => {
               aria-modal="true"
               aria-labelledby="modal-headline"
             >
+                
               <div className="px-4 py-5 sm:px-6">
                 <div className="sm:flex sm:items-center sm:justify-between">
                   <h3
@@ -238,7 +277,20 @@ const FilterModal: React.FC = () => {
                   </button>
                 </div>
               </div>
-
+              {showAlert && (
+    <div 
+      className="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3  mx-auto w-96 rounded relative"
+      role="alert"
+    >
+      <strong className="font-bold">Please select a filter!</strong> 
+      <button
+        onClick={() => setShowAlert(false)} 
+        className="absolute top-0 bottom-0 right-0 px-4 py-3"
+      >
+        <FaTimesCircle className="h-6 w-6 text-orange-500" />
+      </button>
+    </div>
+  )}
               <div className="px-4 py-5 sm:p-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div className="col-span-2 sm:col-span-1">
@@ -272,6 +324,15 @@ const FilterModal: React.FC = () => {
                       <option value="81-100">81-100</option>
                     </select>
                   </div>
+                  <div className="col-span-2">
+  <label>Search</label> 
+  <input 
+    type="text"
+    name="search"
+    value={tempFilter.search}
+    onChange={handleFilterChange}
+  />
+</div>
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700">
                       Country
