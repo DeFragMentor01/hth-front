@@ -14,28 +14,13 @@ import {
   provinceNameAtom,
   districtNameAtom,
   villageNameAtom,
-  searchedVillageAtom
+  searchVillageAtom
 } from "../atoms";
 
 type Location = {
   id: number;
   name: string;
 };
-
-interface LocationData {
-  id: number;
-  no: number;
-  province: string;
-  district: string;
-  name: string;
-  latitude: string;
-  longitude: string;
-  area_square_meter: string;
-  hectares: string;
-  shape_length: string;
-  population: number;
-  district_id: number;
-}
 
 const MapFilters = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,7 +47,7 @@ const MapFilters = () => {
   const [isFilterButtonVisible, setIsFilterButtonVisible] = useRecoilState(
     isFilterButtonVisibleAtom
   );
-  const [searchedVillage, setSearchedVillage] = useRecoilState(searchedVillageAtom);
+  const [searchedVillage, setSearchedVillage] = useRecoilState(searchVillageAtom);
 
   const [selectedCountryId, setSelectedCountryId] = useRecoilState<
     number | null

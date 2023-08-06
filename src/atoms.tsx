@@ -151,9 +151,9 @@ export const villageAtom = atom({
   default: null, // default value
 });
 
-export const searchedVillageAtom = atom({
+export const searchVillageAtom = atom({
   key: 'searchedVillage',
-  default: undefined,
+  default: null,
 });
 
 export const villageNameAtom = atom<string | null>({
