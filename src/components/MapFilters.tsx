@@ -14,7 +14,7 @@ import {
   provinceNameAtom,
   districtNameAtom,
   villageNameAtom,
-  searchVillageAtom
+  searchedVillageAtom
 } from "../atoms";
 
 type Location = {
@@ -47,7 +47,7 @@ const MapFilters = () => {
   const [isFilterButtonVisible, setIsFilterButtonVisible] = useRecoilState(
     isFilterButtonVisibleAtom
   );
-  const [searchedVillage, setSearchedVillage] = useRecoilState(searchVillageAtom);
+  const [searchedVillage, setSearchedVillage] = useRecoilState(searchedVillageAtom);
 
   const [selectedCountryId, setSelectedCountryId] = useRecoilState<
     number | null

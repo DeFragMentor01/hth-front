@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRecoilValue } from "recoil";
-import { locationDataAtom, searchVillageAtom } from "../atoms";
+import { locationDataAtom, searchedVillageAtom } from "../atoms";
 
  interface LocationData {
   id: number;
@@ -23,7 +23,7 @@ mapboxgl.accessToken =
   "pk.eyJ1IjoiYmFydWNoLWsiLCJhIjoiY2xpdDM3dnJqMGwxMDNobzc3emJtYndlaiJ9.mLMAW4ATqzmqjYW49Quo9Q";
 
 const InteractiveGlobe: React.FC = () => {
-  const searchedVillage = useRecoilValue(searchVillageAtom);
+  const searchedVillage = useRecoilValue(searchedVillageAtom);
   const locationData = useRecoilValue<LocationData[]>(locationDataAtom);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -43,7 +43,7 @@ const InteractiveGlobe: React.FC = () => {
   
     let bounds: mapboxgl.LngLatBounds | null = null;
 
-    locationData.forEach((location: LocationData) => {
+    data.forEach((location: LocationData) => {
       const latitude = parseFloat(location.latitude);
       const longitude = parseFloat(location.longitude);
   
@@ -80,7 +80,7 @@ const InteractiveGlobe: React.FC = () => {
     return () => {
       map.remove();
     };
-  }, [locationData]);
+  }, [data]);
   
 
   return (
