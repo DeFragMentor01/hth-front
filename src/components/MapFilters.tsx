@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { MdClose } from "react-icons/md";
 import { AiOutlineSearch } from "react-icons/ai";
@@ -14,7 +14,7 @@ import {
   provinceNameAtom,
   districtNameAtom,
   villageNameAtom,
-  searchedVillageAtom
+  searchedVillageAtom,
 } from "../atoms";
 
 type Location = {
@@ -22,11 +22,21 @@ type Location = {
   name: string;
 };
 
+type Suggestion = {
+  name: string;
+};
+
 const MapFilters = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedVillageName, setSelectedVillageName] = useRecoilState<string | null>(
-    villageNameAtom
-  );  
+  const [villageSuggestions, setVillageSuggestions] = useState<Suggestion[]>(
+    []
+  );
+  const [allVillageSuggestions, setAllVillageSuggestions] = useState<Suggestion[]>([]);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [wasSuggestionClicked, setWasSuggestionClicked] = useState(false);
+  const [selectedVillageName, setSelectedVillageName] = useRecoilState<
+    string | null
+  >(villageNameAtom);
   const [countries, setCountries] = useState<Location[]>([]);
   const [provinces, setProvinces] = useState<Location[]>([]);
   const [districts, setDistricts] = useState<Location[]>([]);
@@ -47,7 +57,8 @@ const MapFilters = () => {
   const [isFilterButtonVisible, setIsFilterButtonVisible] = useRecoilState(
     isFilterButtonVisibleAtom
   );
-  const [searchedVillage, setSearchedVillage] = useRecoilState(searchedVillageAtom);
+  const [searchedVillage, setSearchedVillage] =
+    useRecoilState(searchedVillageAtom);
 
   const [selectedCountryId, setSelectedCountryId] = useRecoilState<
     number | null
@@ -86,7 +97,40 @@ const MapFilters = () => {
     } catch (error) {
       console.error(`Error fetching data from ${url}:`, error);
     }
-  };  
+  };
+
+ // Fetch all suggestions at once
+ useEffect(() => {
+  axios.get(`${process.env.REACT_APP_BASE_URL}/village/search-suggestion`)
+    .then(res => setAllVillageSuggestions(res.data))
+    .catch(err => console.error("Error fetching village suggestions:", err));
+}, []);  
+
+  // When searchTerm changes, fetch new village suggestions
+ // Update filtered suggestions every time the search term changes
+ useEffect(() => {
+  if (searchTerm) {
+    const filteredSuggestions = allVillageSuggestions.filter(suggestion =>
+      suggestion.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setVillageSuggestions(filteredSuggestions);
+  } else {
+    setVillageSuggestions([]);
+  }
+}, [searchTerm, allVillageSuggestions]);
+
+
+const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const newSearchTerm = e.target.value;
+  setSearchTerm(newSearchTerm);
+  setWasSuggestionClicked(false); // New line
+};
+  
+  const handleSuggestionClick = (suggestion: Suggestion) => {
+    setSearchTerm(suggestion.name);
+    setVillageSuggestions([]);
+    setWasSuggestionClicked(true); // New line
+  };   
 
   useEffect(() => {
     getData(`${process.env.REACT_APP_BASE_URL}/countries`, setCountries);
@@ -133,7 +177,7 @@ const MapFilters = () => {
           params: { village_name: searchTerm },
         }
       );
-  
+
       const village = res.data[0];
       if (village) {
         setSearchedVillage(village);
@@ -148,13 +192,13 @@ const MapFilters = () => {
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setErrorMessage(err.response?.data?.message || 'An error occurred');
+        setErrorMessage(err.response?.data?.message || "An error occurred");
       } else {
-        setErrorMessage('An error occurred');
+        setErrorMessage("An error occurred");
       }
       return false;
     }
-  };  
+  };
 
   const handleSelectChange = (
     e: React.ChangeEvent<HTMLSelectElement>,
@@ -195,7 +239,7 @@ const MapFilters = () => {
       setSelectedProvinceId(tempSelectedProvinceId);
       setSelectedDistrictId(tempSelectedDistrictId);
       setSelectedVillageId(tempSelectedVillageId);
-  
+
       const selectedCountryName =
         countries.find((c) => c.id === tempSelectedCountryId)?.name || "";
       const selectedProvinceName =
@@ -204,13 +248,13 @@ const MapFilters = () => {
         districts.find((d) => d.id === tempSelectedDistrictId)?.name || "";
       const selectedVillageName =
         villages.find((v) => v.id === tempSelectedVillageId)?.name || "";
-  
+
       setSelectedCountryName(selectedCountryName);
       setSelectedProvinceName(selectedProvinceName);
       setSelectedDistrictName(selectedDistrictName);
       // Update village name
       setSelectedVillageName(selectedVillageName);
-  
+
       setIsFilterModalVisible(false);
       setIsFilterButtonVisible(true);
     }
@@ -232,16 +276,34 @@ const MapFilters = () => {
       {errorMessage && (
         <div className="text-red-500 mb-4">{errorMessage}</div>
       )}
-      <div className="flex items-center justify-between w-full max-w-md p-2 mb-4 mx-auto bg-white rounded-full shadow-md">
-        <AiOutlineSearch className="text-gray-400" />
-        <input
-           type="text"
-           placeholder="Find a village"
-           className="w-full px-2 py-1 outline-none"
-           value={searchTerm}
-           onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <div className="flex flex-col items-stretch justify-between w-full max-w-md p-2 mb-4 mx-auto bg-white rounded-full shadow-md">
+        <div className="flex items-center">
+          <AiOutlineSearch className="text-gray-400" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Find a village"
+            className="w-full px-2 py-1 outline-none"
+            value={searchTerm}
+            onChange={handleSearchTermChange}
+          />
+        </div>
+        {searchTerm && !wasSuggestionClicked && villageSuggestions.length > 0 && (
+          <div className="relative">
+            <div className="absolute w-full mt-2 bg-white rounded shadow-lg max-h-48 overflow-auto z-50">
+              {villageSuggestions.map((suggestion, index) => (
+                <div
+                  key={index}
+                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        </div>
         <div className="mb-8">
           <label
             className="block text-gray-700 text-sm font-bold mb-4"
