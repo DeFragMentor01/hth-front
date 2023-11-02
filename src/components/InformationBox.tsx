@@ -21,31 +21,40 @@ const [districtVillageCount, setDistrictVillageCount] = useState<string | null>(
   const provinceName = useRecoilValue(provinceNameAtom);
   const districtName = useRecoilValue(districtNameAtom);
 
-  useEffect(() => {
+   useEffect(() => {
+    console.log('Base URL:', process.env.REACT_APP_BASE_URL);  // Log base URL
+
     const fetchCounts = async (locationType: 'country' | 'province' | 'district', userType: 'country' | 'state' | 'community', name: string | null, id: number | null) => {
       if (name && id) {
-        const villageResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/${locationType}/${id}`);
-        const userResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/verified/count`, { params: { [userType]: name } });
-  
-        switch(locationType) {
-          case 'country':
-            setCountryVillageCount(villageResponse.data.count);
-            setCountryUserCounts(userResponse.data);
-            break;
-          case 'province':
-            setProvinceVillageCount(villageResponse.data.count);
-            setProvinceUserCounts(userResponse.data);
-            break;
-          case 'district':
-            setDistrictVillageCount(villageResponse.data.count);
-            setDistrictUserCounts(userResponse.data);
-            break;
-          default:
-            break;
+        try {
+          const villageResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/villages/count/${locationType}/${id}`);
+          console.log(`${locationType} village response data:`, villageResponse.data);  // Log village response data
+
+          const userResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/verified/count`, { params: { [userType]: name } });
+          console.log(`${locationType} user response data:`, userResponse.data);  // Log user response data
+
+          switch(locationType) {
+            case 'country':
+              setCountryVillageCount(villageResponse.data.count);
+              setCountryUserCounts(userResponse.data);
+              break;
+            case 'province':
+              setProvinceVillageCount(villageResponse.data.count);
+              setProvinceUserCounts(userResponse.data);
+              break;
+            case 'district':
+              setDistrictVillageCount(villageResponse.data.count);
+              setDistrictUserCounts(userResponse.data);
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          console.error(`${locationType} fetch error:`, error);  // Log any errors
         }
       }
     };
-  
+
     fetchCounts('country', 'country', countryName, countryId);
     fetchCounts('province', 'state', provinceName, provinceId);
     fetchCounts('district', 'community', districtName, districtId);
