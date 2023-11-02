@@ -9,7 +9,7 @@ const InformationBox: FunctionComponent = () => {
   const provinceId = useRecoilValue(provinceIdAtom);
   const districtId = useRecoilValue(districtIdAtom);
   
-  const [countryVillageCount, setCountryVillageCount] = useState<string | null>(null);
+  const [countryVillageCount, setCountryVillageCount] = useState<string>(null);
 const [provinceVillageCount, setProvinceVillageCount] = useState<string | null>(null);
 const [districtVillageCount, setDistrictVillageCount] = useState<string | null>(null);
 
