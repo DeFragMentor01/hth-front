@@ -68,8 +68,7 @@ const [districtVillageCount, setDistrictVillageCount] = useState<number | null>(
     <div className={`bg-white p-6 rounded-lg shadow-lg ${darkMode ? 'text-green-500' : 'text-black'} divide-y divide-gray-300`}>
     <div className="py-4 space-y-2">
         <h2 className="text-2xl font-semibold tracking-wide">Country: {countryName}</h2>
-{/*         <p className="text-lg">Villages: <span className="font-medium">{countryVillageCount}</span></p> */}
-      <p className="text-lg">Villages: <span className="font-medium">7888</span></p>
+        <p className="text-lg">Villages: <span className="font-medium">{countryVillageCount}</span></p>
         <p className="text-lg">Verified users: <span className="font-medium">{countryUserCounts.verifiedCount}</span></p>
         <p className="text-lg">Non-verified users: <span className="font-medium">{countryUserCounts.nonVerifiedCount}</span></p>
     </div>
