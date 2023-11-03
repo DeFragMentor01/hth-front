@@ -9,9 +9,9 @@ const InformationBox: FunctionComponent = () => {
   const provinceId = useRecoilValue(provinceIdAtom);
   const districtId = useRecoilValue(districtIdAtom);
   
-  const [countryVillageCount, setCountryVillageCount] = useState<string | null>(null);
-const [provinceVillageCount, setProvinceVillageCount] = useState<string | null>(null);
-const [districtVillageCount, setDistrictVillageCount] = useState<string | null>(null);
+const [countryVillageCount, setCountryVillageCount] = useState<number | null>(null);
+const [provinceVillageCount, setProvinceVillageCount] = useState<number | null>(null);
+const [districtVillageCount, setDistrictVillageCount] = useState<number | null>(null);
 
   const [countryUserCounts, setCountryUserCounts] = useState({ verifiedCount: 0, nonVerifiedCount: 0 });
   const [provinceUserCounts, setProvinceUserCounts] = useState({ verifiedCount: 0, nonVerifiedCount: 0 });
