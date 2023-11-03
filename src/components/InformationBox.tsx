@@ -21,6 +21,8 @@ const [districtVillageCount, setDistrictVillageCount] = useState<string | null>(
   const provinceName = useRecoilValue(provinceNameAtom);
   const districtName = useRecoilValue(districtNameAtom);
 
+    console.log('InformationBox component rendered'); 
+
    useEffect(() => {
     console.log('Base URL:', process.env.REACT_APP_BASE_URL);  // Log base URL
 
@@ -60,7 +62,7 @@ const [districtVillageCount, setDistrictVillageCount] = useState<string | null>(
     fetchCounts('district', 'community', districtName, districtId);
   }, [countryId, provinceId, districtId]);
   
-  
+    console.log('Country Village Count:', countryVillageCount); 
 
   return (
     <div className={`bg-white p-6 rounded-lg shadow-lg ${darkMode ? 'text-green-500' : 'text-black'} divide-y divide-gray-300`}>
