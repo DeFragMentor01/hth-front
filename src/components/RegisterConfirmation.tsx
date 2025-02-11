@@ -1,333 +1,228 @@
-import { useState } from "react";
-import { useRecoilState, useRecoilValue } from "recoil";
-import {
-  registrationDataState,
-  darkModeAtom,
-  currentStepAtom,
-} from "../atoms";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { useRecoilValue, useRecoilState } from "recoil";
+import { darkModeAtom, currentStepAtom, registrationDataState } from "../atoms";
+import { FiUser, FiMail, FiMapPin, FiCalendar, FiHome, FiCheck, FiX, FiChevronLeft, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
 import axios from "axios";
-import { animated, useSpring } from "react-spring";
+import { useNavigate } from "react-router-dom";
 
-const RegisterConfirmation = () => {
-  const [userRegistrationData, setUserRegistrationData] = useRecoilState(
-    registrationDataState
+const ConfirmationField: React.FC<{
+  label: string;
+  value: string | undefined;
+  icon: React.ReactNode;
+}> = ({ label, value, icon }) => {
+  const darkMode = useRecoilValue(darkModeAtom);
+  
+  return (
+    <div className={`
+      p-4 rounded-lg border
+      ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}
+    `}>
+      <div className="flex items-center space-x-3">
+        <div className={`
+          p-2 rounded-lg
+          ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white text-gray-600'}
+        `}>
+          {icon}
+        </div>
+        <div>
+          <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {label}
+          </p>
+          <p className={`text-base font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            {value || 'Not provided'}
+          </p>
+        </div>
+      </div>
+    </div>
   );
-  const [currentForm, setCurrentForm] = useRecoilState<number>(currentStepAtom);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+};
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    // Combine the date, month, and year fields into a single date string
-    const dateOfBirth = `${userRegistrationData.year}-${userRegistrationData.month}-${userRegistrationData.date}`;
-
-    // Prepare the data to send in the request
-    const requestData = {
-      ...userRegistrationData,
-      dateofbirth: dateOfBirth,
-    };
-    console.log(requestData);
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await axios.post(process.env.REACT_APP_BASE_URL +'/register', requestData);
-
-      if (response.data.message.includes("User registered successfully!")) {
-        setCurrentForm((prevForm) => prevForm + 1); // Increment the currentStep by 1
-      } else {
-        setError("Registration unsuccessful");
-      }
-    } catch (error) {
-      setError("An error occurred during registration");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInput = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = event.target;
-    setUserRegistrationData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+const RegisterConfirmation: React.FC = () => {
+  const navigate = useNavigate();
+  const darkMode = useRecoilValue(darkModeAtom);
+  const [currentForm, setCurrentForm] = useRecoilState(currentStepAtom);
+  const formData = useRecoilValue(registrationDataState);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePrevious = () => {
     setCurrentForm((prevForm) => prevForm - 1);
   };
 
-  const fadeIn = useSpring({ opacity: 1, from: { opacity: 0 } });
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  const darkMode = useRecoilValue<boolean>(darkModeAtom);
-  const darkModeStyles = darkMode
-    ? "bg-gray-900 text-white"
-    : "bg-gray-200 text-green-700";
+    try {
+      const response = await axios.post(
+        process.env.REACT_APP_BASE_URL + "/register",
+        formData
+      );
+
+      if (response.data && response.data.message === "User registered successfully!") {
+        setCurrentForm((prevForm) => prevForm + 1);
+      } else {
+        setError(response.data?.message || "Registration failed");
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      setError(
+        error.response?.data?.message || 
+        "An error occurred during registration. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = () => {
+    if (!formData.date || !formData.month || !formData.year) return undefined;
+    return `${formData.date}/${formData.month}/${formData.year}`;
+  };
 
   return (
-    <div className={`flex justify-center items-center ${darkMode ? "bg-gray-900" : "bg-gray-200"}`}>
-      <form onSubmit={onSubmit} className="w-full max-w-md">
-        <animated.div className={`flex flex-col items-center py-8 px-8 ${darkModeStyles}`} style={fadeIn}>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
-          <div className="w-1/2 pr-2 mb-4">
-            <label htmlFor="firstName" className="block text-sm font-bold mb-2">
-              First Name
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              id="firstName"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.firstname || ""}
-              onChange={handleInput}
-              required
-            />
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Review Your Information
+        </h3>
+        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          Please verify that all your information is correct before proceeding
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ConfirmationField
+            label="First Name"
+            value={formData.firstname}
+            icon={<FiUser className="w-5 h-5" />}
+          />
+          <ConfirmationField
+            label="Last Name"
+            value={formData.lastname}
+            icon={<FiUser className="w-5 h-5" />}
+          />
+        </div>
+
+        <ConfirmationField
+          label="Username"
+          value={formData.username}
+          icon={<FiUser className="w-5 h-5" />}
+        />
+
+        <ConfirmationField
+          label="Email"
+          value={formData.email}
+          icon={<FiMail className="w-5 h-5" />}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ConfirmationField
+            label="Date of Birth"
+            value={formatDate()}
+            icon={<FiCalendar className="w-5 h-5" />}
+          />
+          <ConfirmationField
+            label="Gender"
+            value={formData.gender}
+            icon={<FiUser className="w-5 h-5" />}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ConfirmationField
+            label="Country"
+            value={formData.country}
+            icon={<FiMapPin className="w-5 h-5" />}
+          />
+          <ConfirmationField
+            label="State/Province"
+            value={formData.state}
+            icon={<FiMapPin className="w-5 h-5" />}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ConfirmationField
+            label="City"
+            value={formData.city}
+            icon={<FiMapPin className="w-5 h-5" />}
+          />
+          <ConfirmationField
+            label="Tribe"
+            value={formData.village}
+            icon={<FiHome className="w-5 h-5" />}
+          />
+        </div>
+
+        <ConfirmationField
+          label="Community"
+          value={formData.community}
+          icon={<FiHome className="w-5 h-5" />}
+        />
+      </div>
+
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg bg-red-50 p-4 text-red-600 text-sm"
+        >
+          <div className="flex items-center space-x-2">
+            <FiAlertCircle className="h-5 w-5" />
+            <span>{error}</span>
           </div>
-          <div className="w-1/2 pl-2 mb-4">
-            <label htmlFor="lastName" className="block text-sm font-bold mb-2">
-              Last Name
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              id="lastName"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.lastname || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          {/* Rest of the form fields */}
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-sm font-bold mb-2">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              id="username"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.username || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-bold mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              id="email"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.email || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-bold mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.password || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          {/* Date of Birth Fields */}
-          <div className="mb-4">
-            <label htmlFor="date" className="block text-sm font-bold mb-2">
-              Date of Birth
-            </label>
-            <div className="flex space-x-2">
-              <select
-                name="date"
-                id="date"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-                value={userRegistrationData?.date || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Date options */}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((date) => (
-                  <option key={date} value={date}>
-                    {date}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="month"
-                id="month"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-                value={userRegistrationData?.month || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Month options */}
-                {[
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ].map((month, index) => (
-                  <option key={month} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="year"
-                id="year"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-                value={userRegistrationData?.year || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Year options */}
-                {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {/* Gender Field */}
-          <div className="mb-4">
-            <span className="block text-sm font-bold mb-2">Gender</span>
-            <label htmlFor="male" className="mr-4">
-              <input
-                type="radio"
-                name="gender"
-                id="male"
-                value="male"
-                className={`mr-1 ${darkModeStyles}`}
-                onChange={handleInput}
-                checked={userRegistrationData?.gender === "male"}
-              />
-              Male
-            </label>
-            <label htmlFor="female">
-              <input
-                type="radio"
-                name="gender"
-                id="female"
-                value="female"
-                className={`mr-1 ${darkModeStyles}`}
-                onChange={handleInput}
-                checked={userRegistrationData?.gender === "female"}
-              />
-              Female
-            </label>
-            {/* Add other gender options if needed */}
-          </div>
-          {/* Tribe Field */}
-          <div className="mb-4">
-            <label htmlFor="village" className="block text-sm font-bold mb-2">
-              Village
-            </label>
-            <input
-              type="text"
-              name="village"
-              id="village"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.village || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          {/* Community Field */}
-          <div className="mb-4">
-            <label htmlFor="community" className="block text-sm font-bold mb-2">
-              Community
-            </label>
-            <input
-              type="text"
-              name="community"
-              id="community"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.community || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="city" className="block text-sm font-bold mb-2">
-              City
-            </label>
-            <input
-              type="text"
-              name="city"
-              id="city"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.city || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="state" className="block text-sm font-bold mb-2">
-              State
-            </label>
-            <input
-              type="text"
-              name="state"
-              id="state"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.state || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="country" className="block text-sm font-bold mb-2">
-              Country
-            </label>
-            <input
-              type="text"
-              name="country"
-              id="country"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${darkMode ? "border-green-300 text-black" : "border-green-500 text-green-700"}`}
-              value={userRegistrationData?.country || ""}
-              onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="flex justify-between">
-            <button
-              type="button"
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
-              onClick={handlePrevious}
-            >
-              Previous
-            </button>
-            <button
-              type="submit"
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Confirm"}
-            </button>
-          </div>
-        </animated.div>
-      </form>
+        </motion.div>
+      )}
+
+      <div className="flex justify-between space-x-4">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          type="button"
+          onClick={handlePrevious}
+          className={`
+            flex-1 py-3 px-4 rounded-lg font-medium
+            border-2 border-blue-600 text-blue-600
+            hover:bg-blue-50 transition-colors
+            flex items-center justify-center space-x-2
+          `}
+        >
+          <FiChevronLeft className="w-5 h-5" />
+          <span>Back</span>
+        </motion.button>
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          type="submit"
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className={`
+            flex-1 py-3 px-4 rounded-lg font-medium text-white
+            bg-gradient-to-r from-blue-600 to-indigo-600
+            hover:from-blue-700 hover:to-indigo-700
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+            flex items-center justify-center space-x-2
+            ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}
+          `}
+        >
+          {isLoading ? (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <>
+              <span>Confirm & Register</span>
+              <FiChevronRight className="w-5 h-5" />
+            </>
+          )}
+        </motion.button>
+      </div>
     </div>
   );
 };

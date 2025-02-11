@@ -1,14 +1,13 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useRecoilValue, useRecoilState } from "recoil";
 import { darkModeAtom, currentStepAtom, registrationDataState } from "../atoms";
-import RegisterButton from "./RegisterButton";
-import { animated, useSpring } from "react-spring";
+import { FiUser, FiMail, FiCalendar, FiChevronLeft, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
 
 const RegisterStepOne: React.FC = () => {
   const [currentForm, setCurrentForm] = useRecoilState(currentStepAtom);
   const [formData, setFormData] = useRecoilState(registrationDataState);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const darkMode = useRecoilValue(darkModeAtom);
 
   const handleInput = (
@@ -16,21 +15,22 @@ const RegisterStepOne: React.FC = () => {
   ) => {
     const { name, value } = event.target;
     setFormData((prevState) => ({ ...prevState, [name]: value }));
+    setErrorMessage(null);
   };
 
   const validateInput = () => {
     const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
 
-    if (formData.firstname.trim().length === 0) {
+    if (!formData.firstname?.trim()) {
       return "First name is required";
     }
-    if (formData.lastname.trim().length === 0) {
+    if (!formData.lastname?.trim()) {
       return "Last name is required";
     }
     if (!emailRegex.test(formData.email || "")) {
       return "Invalid email address";
     }
-    if (formData.date === "" || formData.month === "" || formData.year === "") {
+    if (!formData.date || !formData.month || !formData.year) {
       return "Date of birth is required";
     }
     if (formData.gender !== "male" && formData.gender !== "female") {
@@ -46,7 +46,6 @@ const RegisterStepOne: React.FC = () => {
 
   const handleNext = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-
     const validationResult = validateInput();
     if (validationResult === null) {
       setCurrentForm((prevForm) => prevForm + 1);
@@ -56,214 +55,251 @@ const RegisterStepOne: React.FC = () => {
     }
   };
 
-  const fadeIn = useSpring({
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-    config: { duration: 500 },
-  });
+  const inputClasses = `
+    w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+    transition-all duration-200
+    ${darkMode ? "bg-gray-800 border-gray-700 text-white" : ""}
+  `;
 
-  const darkModeStyles = darkMode
-    ? "bg-gray-800 text-white"
-    : "bg-gray-200 text-green-700";
-  const inputStyles = darkMode
-    ? "bg-gray-900 text-white"
-    : "bg-white text-green-700";
-  const buttonStyles = darkMode
-    ? "bg-gray-800 text-white"
-    : "bg-green-500 hover:bg-green-600 text-white dark";
-  const titleColor = "text-green-700";
-  const errorStyles = errorMessage ? "border-red-500" : "";
+  const labelClasses = `
+    block text-sm font-medium mb-1
+    ${darkMode ? "text-gray-300" : "text-gray-700"}
+  `;
 
   return (
-    <>
-      <animated.div
-        className={`flex flex-col items-center py-40 px-8 ${darkModeStyles}`}
-        style={fadeIn}
-      >
-        <h2 className={`font-bold text-2xl mb-6 ${titleColor}`}>Register</h2>
-        <form className="w-full max-w-md">
-          <div className="flex flex-wrap mb-4">
-            <div className="w-1/2 pr-2">
-              <label
-                htmlFor="firstName"
-                className="block text-sm font-bold mb-2"
-              >
-                First Name
-              </label>
+    <div className="space-y-6">
+      <form className="space-y-6">
+        {/* Name Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="firstname" className={labelClasses}>
+              First Name
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiUser className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+              </div>
               <input
                 type="text"
                 name="firstname"
-                id="firstName"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-                value={formData?.firstname || ""}
+                id="firstname"
+                placeholder="Enter your first name"
+                className={`${inputClasses} pl-10`}
+                value={formData.firstname || ""}
                 onChange={handleInput}
-                required
-              />
-            </div>
-            <div className="w-1/2 pl-2">
-              <label
-                htmlFor="lastName"
-                className="block text-sm font-bold mb-2"
-              >
-                Last Name
-              </label>
-              <input
-                type="text"
-                name="lastname"
-                id="lastName"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-                value={formData?.lastname || ""}
-                onChange={handleInput}
-                required
               />
             </div>
           </div>
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-sm font-bold mb-2">
-              Username
+
+          <div>
+            <label htmlFor="lastname" className={labelClasses}>
+              Last Name
             </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiUser className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+              </div>
+              <input
+                type="text"
+                name="lastname"
+                id="lastname"
+                placeholder="Enter your last name"
+                className={`${inputClasses} pl-10`}
+                value={formData.lastname || ""}
+                onChange={handleInput}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Username Field */}
+        <div>
+          <label htmlFor="username" className={labelClasses}>
+            Username
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiUser className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+            </div>
             <input
               type="text"
               name="username"
               id="username"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-              value={formData?.username || ""}
+              placeholder="Choose a username"
+              className={`${inputClasses} pl-10`}
+              value={formData.username || ""}
               onChange={handleInput}
-              required
             />
           </div>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-bold mb-2">
-              Email
-            </label>
+        </div>
+
+        {/* Email Field */}
+        <div>
+          <label htmlFor="email" className={labelClasses}>
+            Email Address
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiMail className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+            </div>
             <input
               type="email"
               name="email"
               id="email"
-              className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-              value={formData?.email || ""}
+              placeholder="Enter your email"
+              className={`${inputClasses} pl-10`}
+              value={formData.email || ""}
               onChange={handleInput}
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="date" className="block text-sm font-bold mb-2">
-              Date of Birth
-            </label>
-            <div className="flex space-x-2">
-              <select
-                name="date"
-                id="date"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-                value={formData?.date || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Date options */}
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((date) => (
-                  <option key={date} value={date}>
-                    {date}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="month"
-                id="month"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-                value={formData?.month || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Month options */}
-                {[
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ].map((month, index) => (
-                  <option key={month} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="year"
-                id="year"
-                className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-                value={formData?.year || ""}
-                onChange={handleInput}
-                required
-              >
-                {/* Year options */}
-                {Array.from(
-                  { length: 100 },
-                  (_, i) => new Date().getFullYear() - i
-                ).map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="mb-4">
-            <span className="block text-sm font-bold mb-2">Gender</span>
-            <label htmlFor="male" className="mr-4">
-              <input
-                type="radio"
-                name="gender"
-                id="male"
-                value="male"
-                className={`mr-1 ${darkModeStyles}`}
-                onChange={handleInput}
-              />
-              Male
-            </label>
-            <label htmlFor="female">
-              <input
-                type="radio"
-                name="gender"
-                id="female"
-                value="female"
-                className={`mr-1 ${darkModeStyles}`}
-                onChange={handleInput}
-              />
-              Female
-            </label>
-            {/* Add other gender options if needed */}
-          </div>
-          {errorMessage && (
-            <div className="mb-4">
-              <p className="text-red-500 text-sm">{errorMessage}</p>
-            </div>
-          )}
-        </form>
-        <div className="mt-8 flex justify-between">
-          <div className="w-1/2 pr-2">
-            <RegisterButton
-              onClick={handlePrevious}
-              label="Previous"
-              className="w-full"
-            />
-          </div>
-          <div className="w-1/2 pl-2">
-            <RegisterButton
-              label="Next"
-              onClick={handleNext}
-              className={`w-full ${buttonStyles}`}
             />
           </div>
         </div>
-      </animated.div>
-    </>
+
+        {/* Date of Birth */}
+        <div>
+          <label htmlFor="date" className={labelClasses}>
+            Date of Birth
+          </label>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiCalendar className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+              </div>
+              <select
+                name="date"
+                id="date"
+                className={`${inputClasses} pl-10`}
+                value={formData.date || ""}
+                onChange={handleInput}
+              >
+                <option value="">Day</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((date) => (
+                  <option key={date} value={date}>{date}</option>
+                ))}
+              </select>
+            </div>
+            <select
+              name="month"
+              className={inputClasses}
+              value={formData.month || ""}
+              onChange={handleInput}
+            >
+              <option value="">Month</option>
+              {[
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+              ].map((month, index) => (
+                <option key={month} value={index + 1}>{month}</option>
+              ))}
+            </select>
+            <select
+              name="year"
+              className={inputClasses}
+              value={formData.year || ""}
+              onChange={handleInput}
+            >
+              <option value="">Year</option>
+              {Array.from(
+                { length: 100 },
+                (_, i) => new Date().getFullYear() - i
+              ).map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Gender Selection */}
+        <div>
+          <label className={labelClasses}>Gender</label>
+          <div className="grid grid-cols-2 gap-4">
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleInput({ target: { name: 'gender', value: 'male' } } as any)}
+              className={`
+                p-4 rounded-lg text-left transition-all duration-200 flex items-center space-x-3
+                ${formData.gender === 'male'
+                  ? 'bg-blue-600 text-white'
+                  : `${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-900'}`}
+                border-2 ${formData.gender === 'male' ? 'border-blue-600' : 'border-transparent'}
+              `}
+            >
+              <FiUser className="w-5 h-5" />
+              <span>Male</span>
+            </motion.button>
+            
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleInput({ target: { name: 'gender', value: 'female' } } as any)}
+              className={`
+                p-4 rounded-lg text-left transition-all duration-200 flex items-center space-x-3
+                ${formData.gender === 'female'
+                  ? 'bg-blue-600 text-white'
+                  : `${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-50 text-gray-900'}`}
+                border-2 ${formData.gender === 'female' ? 'border-blue-600' : 'border-transparent'}
+              `}
+            >
+              <FiUser className="w-5 h-5" />
+              <span>Female</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg bg-red-50 p-4 text-red-600 text-sm"
+          >
+            <div className="flex items-center space-x-2">
+              <FiAlertCircle className="h-5 w-5" />
+              <span>{errorMessage}</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={handlePrevious}
+            className={`
+              flex-1 py-3 px-4 rounded-lg font-medium
+              border-2 border-blue-600 text-blue-600
+              hover:bg-blue-50 transition-colors
+              flex items-center justify-center space-x-2
+            `}
+          >
+            <FiChevronLeft className="w-5 h-5" />
+            <span>Back</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={handleNext}
+            className={`
+              flex-1 py-3 px-4 rounded-lg font-medium text-white
+              bg-gradient-to-r from-blue-600 to-indigo-600
+              hover:from-blue-700 hover:to-indigo-700
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+              flex items-center justify-center space-x-2
+            `}
+          >
+            <span>Continue</span>
+            <FiChevronRight className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </form>
+    </div>
   );
 };
 

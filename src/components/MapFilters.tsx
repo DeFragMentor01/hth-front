@@ -1,414 +1,419 @@
-import { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import { MdClose } from "react-icons/md";
-import { AiOutlineSearch } from "react-icons/ai";
-import { useRecoilState, useRecoilValue } from "recoil";
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import {
-  isFilterModalVisibleAtom,
-  isFilterButtonVisibleAtom,
   countryIdAtom,
   provinceIdAtom,
   districtIdAtom,
   villageIdAtom,
-  countryNameAtom,
-  provinceNameAtom,
-  districtNameAtom,
-  villageNameAtom,
-  searchedVillageAtom,
-} from "../atoms";
+  darkModeAtom,
+  isFilterModalVisibleAtom,
+  isFilterButtonVisibleAtom
+} from '../atoms';
+import { FiSearch, FiMapPin, FiX, FiChevronDown, FiFilter, FiRefreshCw } from 'react-icons/fi';
+import useDebounce from '../hooks/useDebounce';
 
-type Location = {
-  id: number;
+interface Location {
+  id: string;
   name: string;
-};
+}
 
-type Suggestion = {
-  name: string;
-};
+interface FilterDropdownProps {
+  label: string;
+  value: string;
+  options: Location[];
+  onChange: (value: string) => void;
+  onClear: () => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
 
-const MapFilters = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [villageSuggestions, setVillageSuggestions] = useState<Suggestion[]>(
-    []
+const FilterDropdown: React.FC<FilterDropdownProps> = ({
+  label,
+  value,
+  options,
+  onChange,
+  onClear,
+  disabled = false,
+  placeholder = 'Select...'
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const darkMode = useRecoilValue(darkModeAtom);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.id === value);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        {label}
+      </label>
+      <div className="relative">
+        <button
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`
+            w-full px-4 py-2.5 text-left rounded-lg border transition-all duration-200
+            flex items-center justify-between
+            ${darkMode 
+              ? 'bg-gray-800 border-gray-700 text-gray-200 hover:border-gray-600' 
+              : 'bg-white border-gray-200 text-gray-900 hover:border-gray-300'
+            }
+            ${disabled 
+              ? 'opacity-50 cursor-not-allowed' 
+              : 'focus:ring-2 focus:ring-blue-500/20'
+            }
+          `}
+        >
+          <span className="truncate">
+            {selectedOption ? selectedOption.name : placeholder}
+          </span>
+          <div className="flex items-center">
+            {value && (
+              <button
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onClear();
+                }}
+                className={`
+                  p-1 rounded-full mr-1 transition-colors
+                  ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}
+                `}
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            )}
+            <FiChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`
+                absolute z-50 w-full mt-1 rounded-lg shadow-lg
+                max-h-60 overflow-auto border backdrop-blur-sm
+                ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'}
+              `}
+            >
+              {options.length > 0 ? (
+                options.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => {
+                      onChange(option.id);
+                      setIsOpen(false);
+                    }}
+                    className={`
+                      w-full px-4 py-2.5 text-left transition-colors
+                      ${darkMode 
+                        ? 'hover:bg-gray-700 text-gray-200' 
+                        : 'hover:bg-gray-50 text-gray-900'
+                      }
+                      ${option.id === value 
+                        ? darkMode 
+                          ? 'bg-gray-700' 
+                          : 'bg-gray-100'
+                        : ''
+                      }
+                    `}
+                  >
+                    {option.name}
+                  </button>
+                ))
+              ) : (
+                <div className={`
+                  px-4 py-2.5 text-sm
+                  ${darkMode ? 'text-gray-400' : 'text-gray-500'}
+                `}>
+                  No options available
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
-  const [allVillageSuggestions, setAllVillageSuggestions] = useState<Suggestion[]>([]);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const [wasSuggestionClicked, setWasSuggestionClicked] = useState(false);
-  const [selectedVillageName, setSelectedVillageName] = useRecoilState<
-    string | null
-  >(villageNameAtom);
+};
+
+const MapFilters: React.FC = () => {
   const [countries, setCountries] = useState<Location[]>([]);
   const [provinces, setProvinces] = useState<Location[]>([]);
   const [districts, setDistricts] = useState<Location[]>([]);
-  const [villages, setVillages] = useState<Location[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [selectedCountryName, setSelectedCountryName] = useRecoilState<
-    string | null
-  >(countryNameAtom);
-  const [selectedProvinceName, setSelectedProvinceName] = useRecoilState<
-    string | null
-  >(provinceNameAtom);
-  const [selectedDistrictName, setSelectedDistrictName] = useRecoilState<
-    string | null
-  >(districtNameAtom);
-  const [isFilterModalVisible, setIsFilterModalVisible] = useRecoilState(
-    isFilterModalVisibleAtom
-  );
-  const [isFilterButtonVisible, setIsFilterButtonVisible] = useRecoilState(
-    isFilterButtonVisibleAtom
-  );
-  const [searchedVillage, setSearchedVillage] =
-    useRecoilState(searchedVillageAtom);
+  const [villageSearchTerm, setVillageSearchTerm] = useState('');
+  const [villageSuggestions, setVillageSuggestions] = useState<Location[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const darkMode = useRecoilValue(darkModeAtom);
+  const [, setIsFilterModalVisible] = useRecoilState(isFilterModalVisibleAtom);
+  const [, setIsFilterButtonVisible] = useRecoilState(isFilterButtonVisibleAtom);
 
-  const [selectedCountryId, setSelectedCountryId] = useRecoilState<
-    number | null
-  >(countryIdAtom);
-  const [selectedProvinceId, setSelectedProvinceId] = useRecoilState<
-    number | null
-  >(provinceIdAtom);
-  const [selectedDistrictId, setSelectedDistrictId] = useRecoilState<
-    number | null
-  >(districtIdAtom);
-  const [selectedVillageId, setSelectedVillageId] = useRecoilState<
-    number | null
-  >(villageIdAtom);
+  const [selectedCountry, setSelectedCountry] = useRecoilState(countryIdAtom);
+  const [selectedProvince, setSelectedProvince] = useRecoilState(provinceIdAtom);
+  const [selectedDistrict, setSelectedDistrict] = useRecoilState(districtIdAtom);
+  const [selectedVillage, setSelectedVillage] = useRecoilState(villageIdAtom);
 
-  const [tempSelectedCountryId, setTempSelectedCountryId] = useState<
-    number | null
-  >(selectedCountryId);
-  const [tempSelectedProvinceId, setTempSelectedProvinceId] = useState<
-    number | null
-  >(selectedProvinceId);
-  const [tempSelectedDistrictId, setTempSelectedDistrictId] = useState<
-    number | null
-  >(selectedDistrictId);
-  const [tempSelectedVillageId, setTempSelectedVillageId] = useState<
-    number | null
-  >(selectedVillageId);
-
-  const getData = async (
-    url: string,
-    setData: React.Dispatch<React.SetStateAction<Location[]>>,
-    queryParams?: Record<string, any>
-  ) => {
-    try {
-      const res = await axios.get(url, { params: queryParams });
-      setData(res.data);
-    } catch (error) {
-      console.error(`Error fetching data from ${url}:`, error);
-    }
-  };
-
- // Fetch all suggestions at once
- useEffect(() => {
-  axios.get(`${process.env.REACT_APP_BASE_URL}/village/search-suggestion`)
-    .then(res => setAllVillageSuggestions(res.data))
-    .catch(err => console.error("Error fetching village suggestions:", err));
-}, []);  
-
-  // When searchTerm changes, fetch new village suggestions
- // Update filtered suggestions every time the search term changes
- useEffect(() => {
-  if (searchTerm) {
-    const filteredSuggestions = allVillageSuggestions.filter(suggestion =>
-      suggestion.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setVillageSuggestions(filteredSuggestions);
-  } else {
-    setVillageSuggestions([]);
-  }
-}, [searchTerm, allVillageSuggestions]);
-
-
-const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const newSearchTerm = e.target.value;
-  setSearchTerm(newSearchTerm);
-  setWasSuggestionClicked(false); // New line
-};
-  
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    setSearchTerm(suggestion.name);
-    setVillageSuggestions([]);
-    setWasSuggestionClicked(true); // New line
-  };   
+  const debouncedVillageSearch = useDebounce(villageSearchTerm, 300);
 
   useEffect(() => {
-    getData(`${process.env.REACT_APP_BASE_URL}/countries`, setCountries);
+    const fetchCountries = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/countries`);
+        setCountries(response.data);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    };
+    fetchCountries();
   }, []);
 
   useEffect(() => {
-    if (tempSelectedCountryId) {
-      getData(
-        `${process.env.REACT_APP_BASE_URL}/provinces/${tempSelectedCountryId}`,
-        setProvinces
-      );
-    } else {
-      setProvinces([]);
-    }
-  }, [tempSelectedCountryId]);
+    const fetchProvinces = async () => {
+      if (selectedCountry) {
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/provinces/${selectedCountry}`);
+          setProvinces(response.data);
+        } catch (error) {
+          console.error('Error fetching provinces:', error);
+        }
+      } else {
+        setProvinces([]);
+      }
+    };
+    fetchProvinces();
+  }, [selectedCountry]);
 
   useEffect(() => {
-    if (tempSelectedProvinceId) {
-      getData(
-        `${process.env.REACT_APP_BASE_URL}/districts/${tempSelectedProvinceId}`,
-        setDistricts
-      );
-    } else {
-      setDistricts([]);
-    }
-  }, [tempSelectedProvinceId]);
+    const fetchDistricts = async () => {
+      if (selectedProvince) {
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/districts/${selectedProvince}`);
+          setDistricts(response.data);
+        } catch (error) {
+          console.error('Error fetching districts:', error);
+        }
+      } else {
+        setDistricts([]);
+      }
+    };
+    fetchDistricts();
+  }, [selectedProvince]);
 
   useEffect(() => {
-    if (tempSelectedDistrictId) {
-      getData(
-        `${process.env.REACT_APP_BASE_URL}/villages/${tempSelectedDistrictId}`,
-        setVillages
-      );
-    } else {
-      setVillages([]);
-    }
-  }, [tempSelectedDistrictId]);
-
-  const getVillagesBySearchTerm = async (): Promise<boolean> => {
-    try {
-      const res = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}/villages/search`,
-        {
-          params: { village_name: searchTerm },
+    const fetchVillageSuggestions = async () => {
+      if (debouncedVillageSearch.trim()) {
+        setIsLoading(true);
+        try {
+          const response = await axios.get(
+            `${process.env.REACT_APP_BASE_URL}/villages/search?term=${debouncedVillageSearch}&district=${selectedDistrict || ''}`
+          );
+          setVillageSuggestions(response.data);
+        } catch (error) {
+          console.error('Error fetching village suggestions:', error);
+        } finally {
+          setIsLoading(false);
         }
-      );
-
-      const village = res.data[0];
-      if (village) {
-        setSearchedVillage(village);
-        setTempSelectedVillageId(village.id);
-        setVillages([village]); // Update villages state
-        setErrorMessage(""); // Clear any error message
-        return true;
       } else {
-        setTempSelectedVillageId(null);
-        setVillages([]); // Clear villages state
-        return false;
+        setVillageSuggestions([]);
       }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setErrorMessage(err.response?.data?.message || "An error occurred");
-      } else {
-        setErrorMessage("An error occurred");
-      }
-      return false;
-    }
+    };
+    fetchVillageSuggestions();
+  }, [debouncedVillageSearch, selectedDistrict]);
+
+  const handleReset = () => {
+    setSelectedCountry(null);
+    setSelectedProvince(null);
+    setSelectedDistrict(null);
+    setSelectedVillage(null);
+    setVillageSearchTerm('');
   };
 
-  const handleSelectChange = (
-    e: React.ChangeEvent<HTMLSelectElement>,
-    setState: React.Dispatch<React.SetStateAction<number | null>>
-  ) => {
-    // If search term is empty then we are allowed to update other filters
-    if (!searchTerm) {
-      const selectedValue = e.target.value !== "" ? +e.target.value : null;
-      setState(selectedValue);
-    }
-  };
-
-  const resetFilters = () => {
-    setTempSelectedCountryId(null);
-    setTempSelectedProvinceId(null);
-    setTempSelectedDistrictId(null);
-    setTempSelectedVillageId(null);
-  };
-
-  const applyFilters = () => {
-    if (searchTerm) {
-      console.log("Fetching villages by search term", searchTerm);
-      getVillagesBySearchTerm().then((villageFound) => {
-        if (villageFound) {
-          setSelectedVillageId(tempSelectedVillageId);
-          setSelectedVillageName(searchTerm);
-
-          // Hide filter modal and show filter button
-          setIsFilterModalVisible(false);
-          setIsFilterButtonVisible(true);
-        } else {
-          setErrorMessage("Village not found");
-        }
-      });
-    } else {
-      setErrorMessage("");
-      setSelectedCountryId(tempSelectedCountryId);
-      setSelectedProvinceId(tempSelectedProvinceId);
-      setSelectedDistrictId(tempSelectedDistrictId);
-      setSelectedVillageId(tempSelectedVillageId);
-
-      const selectedCountryName =
-        countries.find((c) => c.id === tempSelectedCountryId)?.name || "";
-      const selectedProvinceName =
-        provinces.find((p) => p.id === tempSelectedProvinceId)?.name || "";
-      const selectedDistrictName =
-        districts.find((d) => d.id === tempSelectedDistrictId)?.name || "";
-      const selectedVillageName =
-        villages.find((v) => v.id === tempSelectedVillageId)?.name || "";
-
-      setSelectedCountryName(selectedCountryName);
-      setSelectedProvinceName(selectedProvinceName);
-      setSelectedDistrictName(selectedDistrictName);
-      // Update village name
-      setSelectedVillageName(selectedVillageName);
-
-      setIsFilterModalVisible(false);
-      setIsFilterButtonVisible(true);
-    }
-  };
-
-  const closeHandler = () => {
+  const handleClose = () => {
     setIsFilterModalVisible(false);
     setIsFilterButtonVisible(true);
   };
 
   return (
-    <div className="modal fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="modal-content w-3/4 max-w-2xl p-6 bg-white rounded-lg shadow-lg relative">
-      <MdClose
-        className="absolute right-4 top-4 cursor-pointer"
-        size={24}
-        onClick={closeHandler}
-      />
-      {errorMessage && (
-        <div className="text-red-500 mb-4">{errorMessage}</div>
-      )}
-      <div className="flex flex-col items-stretch justify-between w-full max-w-md p-2 mb-4 mx-auto bg-white rounded-full shadow-md">
-        <div className="flex items-center">
-          <AiOutlineSearch className="text-gray-400" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Find a village"
-            className="w-full px-2 py-1 outline-none"
-            value={searchTerm}
-            onChange={handleSearchTermChange}
-          />
-        </div>
-        {searchTerm && !wasSuggestionClicked && villageSuggestions.length > 0 && (
-          <div className="relative">
-            <div className="absolute w-full mt-2 bg-white rounded shadow-lg max-h-48 overflow-auto z-50">
-              {villageSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className="p-2 hover:bg-gray-200 cursor-pointer"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion.name}
-                </div>
-              ))}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={handleClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.95 }}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        className={`
+          w-full max-w-lg p-6 rounded-2xl shadow-xl
+          ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white'}
+        `}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className={`
+              p-2 rounded-lg
+              ${darkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}
+            `}>
+              <FiFilter className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Location Filters
+              </h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Select location details to filter the map
+              </p>
             </div>
           </div>
-        )}
-        </div>
-        <div className="mb-8">
-          <label
-            className="block text-gray-700 text-sm font-bold mb-4"
-            htmlFor="country-select"
-          >
-            Select Country
-          </label>
-          <select
-            id="country-select"
-            value={tempSelectedCountryId || ""}
-            onChange={(e) => handleSelectChange(e, setTempSelectedCountryId)}
-            className="block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3"
-          >
-            <option value="">Select Country</option>
-            {countries.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mb-8">
-          <label
-            className="block text-gray-700 text-sm font-bold mb-4"
-            htmlFor="province-select"
-          >
-            Select Province
-          </label>
-          <select
-            id="province-select"
-            value={tempSelectedProvinceId || ""}
-            onChange={(e) => handleSelectChange(e, setTempSelectedProvinceId)}
-            className="block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3"
-          >
-            <option value="">Select Province</option>
-            {provinces.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleReset}
+              className={`
+                flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium
+                transition-colors duration-200
+                ${darkMode 
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }
+              `}
+            >
+              <FiRefreshCw className="w-4 h-4" />
+              <span>Reset</span>
+            </button>
+            <button
+              onClick={handleClose}
+              className={`
+                p-1.5 rounded-lg transition-colors duration-200
+                ${darkMode 
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }
+              `}
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="mb-8">
-          <label
-            className="block text-gray-700 text-sm font-bold mb-4"
-            htmlFor="district-select"
-          >
-            Select District
-          </label>
-          <select
-            id="district-select"
-            value={tempSelectedDistrictId || ""}
-            onChange={(e) => handleSelectChange(e, setTempSelectedDistrictId)}
-            className="block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3"
-          >
-            <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="space-y-4">
+          <FilterDropdown
+            label="Country"
+            value={selectedCountry !== null ? String(selectedCountry) : ''}
+            options={countries}
+            onChange={(val: string) => setSelectedCountry(Number(val))}
+            onClear={() => setSelectedCountry(null)}
+            placeholder="Select a country"
+          />
 
-        <div className="mb-8">
-          <label
-            className="block text-gray-700 text-sm font-bold mb-4"
-            htmlFor="village-select"
-          >
-            Select Village
-          </label>
-          <select
-            id="village-select"
-            value={tempSelectedVillageId || ""}
-            onChange={(e) => handleSelectChange(e, setTempSelectedVillageId)}
-            className="block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3"
-          >
-            <option value="">Select Village</option>
-            {villages.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          <FilterDropdown
+            label="Province"
+            value={selectedProvince !== null ? String(selectedProvince) : ''}
+            options={provinces}
+            onChange={(val: string) => setSelectedProvince(Number(val))}
+            onClear={() => setSelectedProvince(null)}
+            disabled={!selectedCountry}
+            placeholder={selectedCountry ? 'Select a province' : 'Select a country first'}
+          />
 
-        <div className="flex justify-between">
-          <button
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            onClick={applyFilters}
-          >
-            Apply
-          </button>
+          <FilterDropdown
+            label="District"
+            value={selectedDistrict !== null ? String(selectedDistrict) : ''}
+            options={districts}
+            onChange={(val: string) => setSelectedDistrict(Number(val))}
+            onClear={() => setSelectedDistrict(null)}
+            disabled={!selectedProvince}
+            placeholder={selectedProvince ? 'Select a district' : 'Select a province first'}
+          />
 
-          <button
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            onClick={resetFilters}
-          >
-            Reset
-          </button>
+          <div>
+            <label className={`block text-sm font-medium mb-1.5 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Village Search
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={villageSearchTerm}
+                onChange={(e) => setVillageSearchTerm(e.target.value)}
+                placeholder="Search for a village..."
+                className={`
+                  w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all duration-200
+                  ${darkMode 
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-gray-600' 
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-gray-300'
+                  }
+                  focus:outline-none focus:ring-2 focus:ring-blue-500/20
+                `}
+              />
+              <FiSearch className={`
+                absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4
+                ${darkMode ? 'text-gray-500' : 'text-gray-400'}
+              `} />
+              {isLoading && (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                  <FiRefreshCw className={`w-4 h-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                </motion.div>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {villageSuggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`
+                    mt-1 max-h-60 overflow-auto rounded-lg shadow-lg border backdrop-blur-sm
+                    ${darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'}
+                  `}
+                >
+                  {villageSuggestions.map((village) => (
+                    <button
+                      key={village.id}
+                      onClick={() => {
+                        setSelectedVillage(Number(village.id));
+                        setVillageSearchTerm(village.name);
+                        setVillageSuggestions([]);
+                      }}
+                      className={`
+                        w-full px-4 py-2.5 text-left flex items-center space-x-2 transition-colors
+                        ${darkMode 
+                          ? 'hover:bg-gray-700 text-gray-200' 
+                          : 'hover:bg-gray-50 text-gray-900'
+                        }
+                      `}
+                    >
+                      <FiMapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{village.name}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

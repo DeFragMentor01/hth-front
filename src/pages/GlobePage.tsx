@@ -72,25 +72,29 @@ const GlobePage: FunctionComponent<GlobePageProps> = () => {
   return (
     <>
       {isFilterModalVisible && <MapFilters />}
-      <div
-        className={`h-screen flex flex-col ${
-          darkMode ? "bg-gray-900 text-green-300" : "bg-white text-green-700"
-        }`}
-      >
-        <div>
-          <NavBar />
-        </div>
-        <div className="flex-grow flex">
-          <div
-            className={`w-1/3 h-full overflow-auto p-4 space-y-4 ${
-              darkMode
-                ? "bg-gray-800 text-green-300"
-                : "bg-green-200 text-green-700"
-            }`}
-          >
+      <div className={`h-screen flex flex-col ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+        <NavBar />
+        <div className="flex-grow flex relative">
+          <div className="absolute inset-y-0 left-0 w-1/3 p-4 space-y-4 z-10">
             {isFilterButtonVisible && <ShowMapFilterButton />}
-            <UsersStatsBox />
-            <InformationBox />
+            <div className={`
+              backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden
+              ${darkMode 
+                ? 'bg-gray-900/70 border border-gray-800/50' 
+                : 'bg-white/70 border border-gray-200/50'
+              }
+            `}>
+              <UsersStatsBox />
+            </div>
+            <div className={`
+              backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden
+              ${darkMode 
+                ? 'bg-gray-900/70 border border-gray-800/50' 
+                : 'bg-white/70 border border-gray-200/50'
+              }
+            `}>
+              <InformationBox />
+            </div>
           </div>
 
           <div className="flex-grow h-full relative">

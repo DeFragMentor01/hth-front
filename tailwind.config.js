@@ -67,14 +67,50 @@ module.exports = {
           9: '#FFE8D4',
           10: '#FFF4E6',
         },
+        blue: {
+          50: '#F0F7FF',
+          100: '#E0EFFF',
+          200: '#B8DBFF',
+          300: '#8AC2FF',
+          400: '#5CA9FF',
+          500: '#2E90FF',
+          600: '#0070F3',
+          700: '#0058CC',
+          800: '#004299',
+          900: '#002B66',
+        },
+        indigo: {
+          50: '#F5F7FF',
+          100: '#EBEFFF',
+          200: '#D1DEFF',
+          300: '#B3C6FF',
+          400: '#8AA3FF',
+          500: '#6180FF',
+          600: '#3B5BDB',
+          700: '#2F4BB3',
+          800: '#233A8C',
+          900: '#172966',
+        },
       },
       fontFamily: {
-        sans: ['Roboto', ...defaultTheme.fontFamily.sans],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Poppins', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
       },
     },
   },
   variants: {
     extend: {},
   },
-  plugins: [require('@tailwindcss/typography')],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 };

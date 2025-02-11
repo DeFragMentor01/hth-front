@@ -1,38 +1,93 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useRecoilValue, useRecoilState } from "recoil";
 import { currentStepAtom, darkModeAtom, registrationDataState } from "../atoms";
-import RegisterButton from "./RegisterButton";
-import { animated, useSpring } from "react-spring";
+import { FiMapPin, FiHome, FiGlobe, FiMap, FiUsers, FiChevronLeft, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
 
-interface StepTwoFormData {
-  village: string;
-  community: string;
-  city: string;
-  state: string;
-  country: string;
+// Define the props for the input component, including an onChange handler
+interface InputFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  icon: React.ReactNode;
+  placeholder: string;
+  type?: "text" | "select";
+  options?: string[];
+  onChange: React.ChangeEventHandler<HTMLInputElement | HTMLSelectElement>;
 }
 
+// Move the InputField component outside of RegisterStepTwo.
+// It uses the darkMode from recoil for styling.
+const InputField: React.FC<InputFieldProps> = ({
+  label,
+  name,
+  value,
+  icon,
+  placeholder,
+  type = "text",
+  options,
+  onChange,
+}) => {
+  const darkMode = useRecoilValue(darkModeAtom);
+  const inputClasses = `
+    w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+    transition-all duration-200
+    ${darkMode ? "bg-gray-800 border-gray-700 text-white" : ""}
+  `;
+  const labelClasses = `
+    block text-sm font-medium mb-1
+    ${darkMode ? "text-gray-300" : "text-gray-700"}
+  `;
+  return (
+    <div>
+      <label htmlFor={name} className={labelClasses}>
+        {label}
+      </label>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          {icon}
+        </div>
+        {type === "text" ? (
+          <input
+            type="text"
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            className={`${inputClasses} pl-10`}
+          />
+        ) : (
+          <select
+            id={name}
+            name={name}
+            value={value}
+            onChange={onChange}
+            className={`${inputClasses} pl-10`}
+          >
+            <option value="">{placeholder}</option>
+            {options?.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const villages: string[] = [
-  "Reuben",
-  "Simeon",
-  "Levi",
-  "Judah",
-  "Dan",
-  "Naphtali",
-  "Gad",
-  "Asher",
-  "Issachar",
-  "Zebulun",
-  "Joseph",
-  "Benjamin",
+  "Reuben", "Simeon", "Levi", "Judah", "Dan", "Naphtali",
+  "Gad", "Asher", "Issachar", "Zebulun", "Joseph", "Benjamin",
 ];
 
 const RegisterStepTwo: React.FC = () => {
   const darkMode = useRecoilValue(darkModeAtom);
   const [currentForm, setCurrentForm] = useRecoilState(currentStepAtom);
   const [formData, setFormData] = useRecoilState(registrationDataState);
-  const { country, city, village, community, state } = formData;
-
   const [errors, setErrors] = useState({
     country: "",
     city: "",
@@ -41,184 +96,156 @@ const RegisterStepTwo: React.FC = () => {
     community: "",
   });
 
-  const fadeIn = useSpring({ opacity: 1, from: { opacity: 0 } });
-
-  const handleInput = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = event.target;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    },
-    []
-  );
+  const handleInput = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = event.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear error when user starts typing
+    setErrors(prev => ({
+      ...prev,
+      [name]: "",
+    }));
+  };
 
   const handlePrevious = () => {
     setCurrentForm((prevForm) => prevForm - 1);
   };
 
-  const handleSubmit = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-      event.preventDefault();
+  const handleNext = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
 
-      let newErrors = {
-        country: "",
-        city: "",
-        village: "",
-        community: "",
-        state: "",
-      };
-      let hasErrors = false;
+    let newErrors = {
+      country: "",
+      city: "",
+      village: "",
+      community: "",
+      state: "",
+    };
+    let hasErrors = false;
 
-      if (!country) {
-        newErrors.country = "Please select your country";
-        hasErrors = true;
-      }
+    if (!formData.country?.trim()) {
+      newErrors.country = "Please select your country";
+      hasErrors = true;
+    }
+    if (!formData.city?.trim()) {
+      newErrors.city = "Please enter your city";
+      hasErrors = true;
+    }
+    if (!formData.village) {
+      newErrors.village = "Please select your village";
+      hasErrors = true;
+    }
+    if (!formData.state?.trim()) {
+      newErrors.state = "Please enter your state";
+      hasErrors = true;
+    }
+    if (!formData.community?.trim()) {
+      newErrors.community = "Please enter your community";
+      hasErrors = true;
+    }
 
-      if (!city) {
-        newErrors.city = "Please enter your city";
-        hasErrors = true;
-      }
+    setErrors(newErrors);
 
-      if (!village) {
-        newErrors.village = "Please select your village";
-        hasErrors = true;
-      }
-
-      if (!state) {
-        newErrors.state = "Please enter your state";
-        hasErrors = true;
-      }
-
-      if (!community) {
-        newErrors.community = "Please enter your community";
-        hasErrors = true;
-      }
-
-      setErrors(newErrors);
-
-      if (!hasErrors) {
-        setCurrentForm((prevForm) => prevForm + 1);
-      }
-    },
-    [city, community, country, setCurrentForm, state, village]
-  );
-
-  const tribeOptions = useMemo(
-    () =>
-      villages.map((village) => (
-        <option key={village} value={village}>
-          {village}
-        </option>
-      )),
-    []
-  );
-
-  const darkModeStyles = darkMode
-    ? "bg-gray-800 text-white"
-    : "bg-gray-200 text-green-700";
-  const inputStyles = darkMode
-    ? "bg-gray-900 text-white"
-    : "bg-white text-green-700";
-  const buttonStyles = `bg-green-500 hover:bg-green-600 text-white ${
-    darkMode ? "dark" : ""
-  }`;
-  const titleColor = "text-green-700";
-  const errorStyles = "text-red-500 text-sm";
+    if (!hasErrors) {
+      setCurrentForm((prevForm) => prevForm + 1);
+    }
+  };
 
   return (
-    <animated.div
-      className={`flex flex-col items-center py-40 px-8 ${darkModeStyles}`}
-      style={fadeIn}
-    >
-      <h2 className={`font-bold text-2xl mb-6 ${titleColor}`}>
-        Step Two: Location and Village
-      </h2>
-      <form className="w-full max-w-md">
-        <div className="mb-4">
-          <label htmlFor="country" className="block text-sm font-bold mb-2">
-            Country:
-          </label>
-          <input
-            type="text"
+    <div className="space-y-6">
+      <form className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="Country"
             name="country"
-            value={country}
+            value={formData.country || ""}
+            icon={<FiGlobe className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />}
+            placeholder="Enter your country"
             onChange={handleInput}
-            className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
           />
-          {errors.country && <p className={errorStyles}>{errors.country}</p>}
-        </div>
-        <div className="mb-4">
-          <label htmlFor="state" className="block text-sm font-bold mb-2">
-            State:
-          </label>
-          <input
-            type="text"
+          
+          <InputField
+            label="State/Province"
             name="state"
-            value={state}
+            value={formData.state || ""}
+            icon={<FiMap className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />}
+            placeholder="Enter your state"
             onChange={handleInput}
-            className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
           />
-          {errors.state && <p className={errorStyles}>{errors.state}</p>}
         </div>
-        <div className="mb-4">
-          <label htmlFor="city" className="block text-sm font-bold mb-2">
-            City:
-          </label>
-          <input
-            type="text"
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField
+            label="City"
             name="city"
-            value={city}
+            value={formData.city || ""}
+            icon={<FiMapPin className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />}
+            placeholder="Enter your city"
             onChange={handleInput}
-            className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
           />
-          {errors.city && <p className={errorStyles}>{errors.city}</p>}
-        </div>
-        <div className="mb-4">
-          <label htmlFor="village" className="block text-sm font-bold mb-2">
-            Village:
-          </label>
-          <select
+          
+          <InputField
+            label="Tribe"
             name="village"
-            value={village}
+            value={formData.village || ""}
+            icon={<FiHome className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />}
+            placeholder="Select your village"
+            type="select"
+            options={villages}
             onChange={handleInput}
-            className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
-          >
-            <option value="">Select...</option>
-            {tribeOptions}
-          </select>
-          {errors.village && <p className={errorStyles}>{errors.village}</p>}
-        </div>
-        <div className="mb-4">
-          <label htmlFor="community" className="block text-sm font-bold mb-2">
-            Community:
-          </label>
-          <input
-            type="text"
-            name="community"
-            value={community}
-            onChange={handleInput}
-            className={`appearance-none border-2 rounded-md w-full py-2 px-4 leading-tight focus:outline-none focus:border-green-500 ${inputStyles}`}
           />
-          {errors.community && (
-            <p className={errorStyles}>{errors.community}</p>
-          )}
+        </div>
+
+        <InputField
+          label="Community"
+          name="community"
+          value={formData.community || ""}
+          icon={<FiUsers className={`h-5 w-5 ${darkMode ? "text-gray-500" : "text-gray-400"}`} />}
+          placeholder="Enter your community"
+          onChange={handleInput}
+        />
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between space-x-4">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={handlePrevious}
+            className={`
+              flex-1 py-3 px-4 rounded-lg font-medium
+              border-2 border-blue-600 text-blue-600
+              hover:bg-blue-50 transition-colors
+              flex items-center justify-center space-x-2
+            `}
+          >
+            <FiChevronLeft className="w-5 h-5" />
+            <span>Back</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={handleNext}
+            className={`
+              flex-1 py-3 px-4 rounded-lg font-medium text-white
+              bg-gradient-to-r from-blue-600 to-indigo-600
+              hover:from-blue-700 hover:to-indigo-700
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+              flex items-center justify-center space-x-2
+            `}
+          >
+            <span>Continue</span>
+            <FiChevronRight className="w-5 h-5" />
+          </motion.button>
         </div>
       </form>
-      <div className="mt-8 flex">
-        <RegisterButton
-          onClick={handlePrevious}
-          label="Previous"
-          className="mr-4"
-        />
-        <RegisterButton
-          label="Next"
-          onClick={handleSubmit}
-          className={buttonStyles}
-        />
-      </div>
-    </animated.div>
+    </div>
   );
 };
 
